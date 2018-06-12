@@ -1,0 +1,573 @@
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{vignette-hierinf.Rnw}
+%\VignetteEncoding{UTF-8}
+
+\documentclass[11pt]{article}
+\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{latexsym,amsmath,amssymb,amsthm,epic,eepic,multirow}
+\usepackage{natbib}
+
+%\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{subfigure}
+% \usepackage{amsfonts}
+%\usepackage{jmlr2e}
+\usepackage{natbib}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{mdframed}
+% \usepackage{sfsbib}
+\usepackage{tikz}
+\usepackage{hyperref}
+
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\EE}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Nat}{\mathbb{N}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\parcor}{\mbox{Parcor}}
+\newcommand{\Cov}{\mbox{Cov}}
+\newcommand{\Cor}{\mbox{Cor}}
+\newcommand{\Var}{\mbox{Var}}
+\newcommand{\peff}{\mathrm{peff}}
+\newcommand{\by}{\mathbf{Y}}
+\newcommand{\bx}{\mathbf{X}}
+\newcommand{\argmin}{\mathrm{argmin}}
+\newcommand{\pa}{\mathrm{pa}}
+
+%\theoremstyle{plain}
+\newtheorem{theo}{Theorem}
+\newtheorem{prop}{Proposition}
+\newtheorem{lemm}{Lemma}
+\newtheorem{corr}{Corollary}
+
+%\theoremstyle{definition}
+\newtheorem{defi}{Definition}
+\newtheorem{examp}{Example}
+
+\begin{document}
+
+\title{Hierarchical inference for genome-wide association studies}
+
+\author{Claude Renaux, Laura Buzdugan, Markus Kalisch and Peter
+  B\"uhlmann\\Seminar for Statistics, ETH Z\"urich}
+%\date{}
+
+\maketitle
+
+\noindent \textbf{This vignette is based on the pre-print \cite{renaux18} and
+contains the part about the illustration of our \textsf{R}-package
+\texttt{hierinf}.}
+
+\section{Introduction}
+Hierarchical inference is a key technique for computationally and statistically
+efficient hypothesis testing and multiple testing adjustment. We consider
+inference in a multivariate model which quantifies effects after adjusting for
+all remaining single nucleotide polymorphism (SNP) covariates. The hierarchy
+enables in a fully data-driven way to infer significant groups or
+regions of SNPs at an adaptive resolution, by controlling the familywise
+error rate (FWER). We have recently proposed high-dimensional hierarchical
+inference for assigning statistical significance in terms of p-values for
+groups of SNPs being associated to a response variable: \cite{buzduganetal16}
+considers this approach for human GWAS and \cite{klasenetal16} for GWAS
+with plants. The methodological and theoretical concepts have been worked
+out in \cite{manpb16} and \cite{manpb16b}.
+
+The \textsf{R} package \texttt{hierinf} is an implementation of the
+hierarchical inference described in \cite{renaux18} and
+it is easy to use for GWAS.
+The package is a re-implementation of the \textsf{R} package \texttt{hierGWAS}
+\citep{hierGWASpackage160} and includes new features like straightforward
+parallelization, an additionally option for constructing a hierarchical
+tree based on spatially contiguous genomic positions, and the possibility
+of jointly analyzing multiple data sets.
+
+\section{Software}\label{sec.hierinf}
+To summarize the method, one starts by clustering the data
+hierarchically. This means that the clusters can be represented by a tree.
+The main idea is to pursue testing top-down and successively moving
+downwards until the null-hypotheses cannot be rejected. The p-value of a
+given cluster is calculated based on the multiple sample splitting approach
+and aggregation of those p-values as described in \cite{renaux18}.
+
+The work flow is straightforward and is composed in two function calls.
+We note that the package \texttt{hierinf} requires complete observations,
+i.e. no missing values in the data, because the testing procedure is based
+on all the SNPs which is in contrast to marginal tests. If missing
+values are present, they can be imputed prior to the analysis. This can
+be done in \textsf{R} using e.g. \texttt{mice} \citep{vanbuuren11},
+\texttt{mi} \citep{shi11}, or \texttt{missForest} \citep{stekhoven11}.
+
+A small simulated toy example with two chromosomes is used to demonstrate
+the procedure. The toy example is taken from \citep{hierGWASpackage160} and
+was generated using \textsf{PLINK} where the SNPs were binned into different
+allele frequency ranges. The response is binary with 250 controls
+and 250 cases.
+Thus, there are $n = 500$ samples, the number of SNPs is $p = 1000$, and
+there are two additional control variables with column names ``age'' and
+``sex''. The first 990 SNPs have no association
+with the response and the last 10 SNPs were simulated to have a population
+odds ratio of 2.
+The functions of the package \texttt{hierinf} require
+the input of the SNP data to be a \texttt{matrix} (or a list of matrices
+for multiple data sets). We use a \texttt{matrix} instead of a
+\texttt{data.frame} since this makes computation faster.
+
+<<>>=
+# load the package
+library(hierinf)
+
+# random number generator (for parallel computing)
+RNGkind("L'Ecuyer-CMRG")
+
+# We use a small build-in data set for our toy example.
+data(simGWAS)
+
+# The genotype, phenotype and the control variables are saved in
+# different objects.
+sim.geno <- simGWAS$x
+sim.pheno <- simGWAS$y
+sim.clvar <- simGWAS$clvar
+@
+
+The two following sections correspond to the two function calls in order
+to perform hierarchical testing. The third section gives some notes
+about running the code in parallel.
+
+\subsection{Software for clustering} \label{subsec.clustering}
+The package \texttt{hierinf} offers two possibilities to build a
+hierarchical tree for corresponding hierarchical testing. The function
+\texttt{cluster\char`_var} performs hierarchical clustering based on
+some dissimilarity matrix and is described first. The function
+\texttt{cluster\char`_position} builds a tree based on recursive binary
+partitioning of consecutive positions of the SNPs. For a short
+description, see at the end of Section 2.3 in \cite{renaux18}.
+
+Hierarchical clustering is computationally expensive and prohibitive for
+large data sets. Thus, it makes sense to pre-define dis-joint sets of SNPs
+which can be clustered separately. One would typically assume that the
+second level of a cluster tree structure corresponds to the blocks given
+by the chromosomes as illustrated in Figure \ref{fig3}.
+For the method based on binary partitioning of consecutive positions
+of SNPs, we recommend to pre-define the second level of the hierarchical tree as well.
+This allows to run the building of the hierarchical tree and the hierarchical
+testing for each block or in our case for each chromosome in parallel, which
+can be achieved by adding the two commented arguments in the function calls below.
+If one does not want to specify the second level of the tree, then the
+argument \texttt{block} in both function calls can be omitted.
+
+\begin{figure}[!htb]
+\begin{center}
+\begin{tikzpicture}[level distance=1.6cm,
+  level 1/.style={sibling distance=2.4cm},
+  level 2/.style={sibling distance=1.75cm}]
+\node (z) {entire data}
+  child {node (a) {block 1}
+    child {node (aa) {$\vdots$}}
+    child {node (ab) {$\vdots$}}
+  }
+  child {node (b) {block 2}
+    child {node (ba) {$\vdots$}}
+    child {node (bb) {$\vdots$}}
+  }
+  child [ missing ]
+  child {node (c) {block $k$}
+    child {node (ca) {$\vdots$}}
+    child {node (cb) {$\vdots$}}
+  };
+\path (b) -- (c) node (x) [midway] {$\cdots$};
+\end{tikzpicture}
+\caption{The user can define the second level of the tree structure using
+the argument \texttt{block} of the functions \texttt{cluster\char`_var} /
+\texttt{cluster\char`_position} and \texttt{test\char`_hierarchy} if desired.
+In this example, there are $k$ blocks on the second level of the tree. The function
+\texttt{cluster\char`_var} / \texttt{cluster\char`_position} builds a separate
+hierarchical tree for each of the blocks.
+}\label{fig3}
+\end{center}
+\end{figure}
+
+In the toy example, we define the second level of the tree structure as follows.
+The first and second 500 SNPs of the SNP data \texttt{sim.geno} correspond
+to chromosome 1 and chromosome 2, respectively.
+The object \texttt{block} is a \texttt{data.frame} which contains two
+columns identifying the two blocks.
+The blocks are defined in the second column and the corresponding column
+names of the SNPs are stored in the first column. The argument
+\texttt{stringsAsFactors} of the function \texttt{data.frame} is set to
+\texttt{FALSE} because we want both columns to contain integers or strings.
+
+<<>>=
+# Define the second level of the tree structure.
+block <- data.frame("colname" = paste0("SNP.", 1:1000),
+                    "block" = rep(c("chrom 1", "chrom 2"), each = 500),
+                    stringsAsFactors = FALSE)
+
+# Cluster the SNPs
+dendr <- cluster_var(x = sim.geno,
+                     block = block,
+                     seed = 1234)
+                     # # the following arguments have to be specified
+                     # # for parallel computation
+                     # parallel = "multicore",
+                     # ncpus = 2)
+@
+
+By default, the function \texttt{cluster\char`_var} uses the agglomeration
+method average linkage and the
+dissimilarity matrix given by $1 - (\mbox{empirical correlation})^2$.
+
+Alternatively, \texttt{cluster\char`_position} builds a hierarchical tree
+using recursive binary partitioning of consecutive genomic positions of the
+SNPs.
+As for \texttt{cluster\char`_var}, the function
+can be run in parallel if the argument block defines the second level
+of the hierarchical tree and the two commented arguments parallel and
+ncpus are added.
+
+<<eval=FALSE>>=
+# Define the second level of the tree structure.
+position <- data.frame("colnames" = paste0("SNP.", 1:1000),
+                       "position" = seq(from = 1, to = 1000),
+                       stringsAsFactors = FALSE)
+
+
+# Build the hierarchical tree based on the position
+# The argument block defines the second level of the tree structure.
+dendr.pos <- cluster_position(position = position,
+                              block = block,
+                              seed = 1234)
+                              # # the following arguments have to be
+                              # # specified for parallel computation
+                              # parallel = "multicore",
+                              # ncpus = 2)
+@
+
+\subsection{Software for hierarchical testing} \label{subsec.hiertesting}
+
+The function \texttt{test\char`_hierarchy} is executed after the function
+\texttt{cluster\char`_var} or \texttt{cluster\char`_position} since it requires
+the output of one of those two functions as an input (argument \texttt{dendr}).
+
+The function \texttt{test\char`_hierarchy} first randomly splits the data
+into two halves (with respect to the observations), by default \texttt{B = 50}
+times, and performs variable screening on the second half. Then, the function
+\texttt{test\char`_hierarchy} uses those splits and corresponding selected
+variables to perform the hierarchical testing according to the tree defined
+by the output of one of the two functions \texttt{cluster\char`_var} or
+\texttt{cluster\char`_position}.
+
+As mentioned in Section \ref{subsec.clustering}, we can exploit the
+proposed hierarchical structure which assumes the chromosomes to form the
+second level of the tree structure as illustrated in Figure
+\ref{fig3}. This allows to run the testing in parallel for each
+block, which are the chromosomes in the toy example.
+
+The following function call performs first the global null-hypothesis test
+for the group containing all the variables/SNPs and continues
+testing in the hierarchy of the two chromosomes and their children.
+
+<<>>=
+# Test the hierarchy using multi sample split
+result <- test_hierarchy(x = sim.geno,
+                         y = sim.pheno,
+                         clvar = sim.clvar,
+                         # alternatively: dendr = dendr.pos
+                         dendr = dendr,
+                         family = "binomial",
+                         seed = 1234)
+                         # # the following arguments have to be
+                         # # specified for parallel computation
+                         # parallel = "multicore",
+                         # ncpus = 2)
+@
+
+The function \texttt{test\char`_hierarchy} allows to fit models with
+continuous or binary response, the latter being based on logistic
+regression. The argument \texttt{family} is set to \texttt{"binomial"}
+because the response variable in the toy example is binary.
+
+The output looks as follows:
+<<>>=
+print(result, n.terms = 4)
+@
+
+The output shows significant groups of SNPs or even single SNPs if there is
+sufficient strong signal in the data. The block names, the p-values, and
+the column names (of the SNP data) of the significant clusters are
+returned. There is no significant cluster in chromosome 1.
+That's the reason why the p-value and the column names of the significant
+cluster are \texttt{NA} in the first row of the output.
+Note that the large significant cluster in the second row of the output is
+shortened to better fit on screen. In our toy example, the last 8 column names
+are replaced by ``\texttt{... [8]}''. The maximum number of terms can be
+changed by the argument \texttt{n.terms} of the \texttt{print} function.
+One can evaluate the object \texttt{result} in the console and the default
+values of the \texttt{print} function are used. In this case, it would only
+display the first 5 terms.
+
+The only difference in the \textsf{R} code
+when using a hierarchical tree based on binary recursive partitioning of the
+genomic positions of the SNPs (whose output is denoted as \texttt{dendr.pos})
+is to specify the corresponding hierarchy:
+\texttt{test\char`_hierarchy(..., dendr = dendr.pos, ...).}
+
+We can access part of the output
+by \texttt{result\$res.hierarchy} which we use below to calculate the
+$\mbox{R}^2$ value of the second row of the output, i.e.
+\texttt{result\$res.hierarchy[[2, "significant.cluster"]]}. Note that we
+need the double square brackets to access the column names stored in the column
+\texttt{significant.cluster} of the output since the last column is a list
+where each element contains a character vector of the column names. The two
+other columns containing the block names and the p-values which both can be
+indexed using single square brackets as for any \texttt{data.frame}, e.g.
+\texttt{result\$res.hierarchy[2, "p.value"]}.
+
+<<>>=
+(coln.cluster <- result$res.hierarchy[[2, "significant.cluster"]])
+@
+
+The function \texttt{compute\char`_r2} calculates the adjusted $\mbox{R}^2$ value
+or coefficient of determination of a cluster for a continuous response. The
+Nagelkerke's $\mbox{R}^2$ \citep{nagelkerke91} is calculated for a binary
+response as e.g. in our toy example.
+
+<<>>=
+compute_r2(x = sim.geno, y = sim.pheno, clvar = sim.clvar,
+           res.test.hierarchy = result, family = "binomial",
+           colnames.cluster = coln.cluster)
+@
+
+If one does not specify the argument \texttt{colnames.cluster}, then the
+$\mbox{R}^2$ value of the whole data set is calculated.
+
+\subsection{Software for parallel computing} \label{subsec.parallel}
+
+The function calls of \texttt{cluster\char`_var}, \texttt{cluster\char`_position},
+and \texttt{test\char`_hierarchy} above can be evaluated in parallel if one adds
+the commented arguments \texttt{parallel = "multicore"} and \texttt{ncpus = 2}.
+The argument \texttt{parallel} can be set to \texttt{"no"} for serial
+evaluation (default value), to \texttt{"multicore"} for parallel evaluation
+using forking, or to \texttt{"snow"} for parallel evaluation using a parallel
+socket cluster (PSOCKET); see below for more details. The argument
+\texttt{ncpus} corresponds to the number of cores to be used for parallel
+computing. We use the \texttt{parallel} package for our implementation
+which is already included in the base \textsf{R} installation
+\citep{rcoreteam17}.
+
+The user has to select the ``L'Ecuyer-CMRG'' pseudo-random number
+generator and set a seed such that the parallel computing of \texttt{hierinf}
+is reproducible. This pseudo-random number generator can be selected by
+\texttt{RNGkind("L'Ecuyer-CMRG")} and has to be executed once for every new
+\textsf{R} session; see \textsf{R} code at the beginning of Section
+\ref{sec.hierinf}. This allows us to create multiple streams of pseudo-random
+numbers, one for each processor / computing node, using the \texttt{parallel}
+package; for more details see the vignette of the \texttt{parallel} package
+published by \citet{rcoreteam17}.
+
+We recommend to set the argument \texttt{parallel = "multicore"} which is
+possible on Unix/Mac (but not Windows) operation systems. The function is
+then evaluated in parallel using forking which is leaner on the memory usage.
+This is a neat feature for GWAS since e.g. a large SNP data set does not
+have to be copied to the new environment of each of the processors. Note
+that this is only possible on a multicore machine and not on a cluster.
+
+On all operation systems, it is possible to create a parallel socket
+cluster (PSOCKET) which corresponds to setting the argument
+\texttt{parallel = "snow"}. This means that the computing nodes or
+processors do not share the memory, i.e. an \textsf{R} session with an
+empty environment is initialized for each of the computing nodes or processors.
+
+How many processors should one use? If the user specifies the second level
+of the tree, i.e. defines the \texttt{block} argument of the functions
+\texttt{cluster\char`_var} / \texttt{cluster\char`_position} and
+\texttt{test\char`_hierarchy}, then the building of the hierarchical tree and
+the hierarchical testing can be easily performed in parallel across the different
+blocks. Note that the package can make use of as many processors as there are
+blocks, say, 22 chromosomes. In addition, the multi sample splitting
+and screening step, which is performed inside the function
+\texttt{test\char`_hierarchy}, can always be executed in parallel regardless
+if we defined blocks or not. It can make use of at most $B$ processors where
+$B$ is the number of sample splits.
+
+
+\section{Meta-analysis for several datasets} \label{sec.meta}
+
+The naive (and conceptually wrong) approach would be to pool the different
+datasets and proceed as if it would be one homogeneous dataset. We advocate
+meta analysis and aggregating corresponding p-values; see \cite{renaux18}
+for more details.
+
+\paragraph{Fast computational methods for pooled GWAS.} There has been a
+considerable interest for fast algorithms for GWAS with very large sample
+size in the order of $10^5$; see \citet{lippert11, zhousteph14}.
+Often though, such large sample size comes from pooling different studies
+or sub-populations. We argue in favor of meta analysis and aggregating
+corresponding p-values. Besides more statistical robustness against
+heterogeneity (arising from the different sub-populations), meta-analysis
+is also computationally very attractive: the computations can be trivially
+implemented in parallel for every sub-population and the p-value aggregation
+step comes essentially without any computational cost.
+
+\subsection{Software for aggregating p-values of multiple studies} \label{subsec.multiplestudies}
+
+It is easily possible to combine the information of multiple studies by
+aggregating p-values as described in Section \ref{sec.meta}.
+The package \texttt{hierinf} offers two methods for jointly estimating
+a single hierarchical tree for all data sets using either of the
+functions
+\texttt{cluster\char`_var} or \texttt{cluster\char`_position}; compare with
+Section \ref{subsec.clustering}. Testing is performed by the function
+\texttt{test\char`_hierarchy} in a top-down manner given by the joint
+hierarchical tree. For a given cluster, p-values are calculated based on the
+intersection of the cluster and each data set (corresponding to a study) and
+those p-values are then aggregated to obtain one p-value per cluster using
+Stouffer's rule as in Section 4 in \cite{renaux18} or \cite{stouffer49}.
+The difference and issues of the two methods for
+estimating a joint hierarchical tree are described in the following two
+paragraphs.
+
+The function \texttt{cluster\char`_var} estimates a hierarchical tree based on
+clustering the SNPs from all the studies. Problems arise if the
+studies do not measure the same SNPs and thus,
+some of the entries of the dissimilarity matrix cannot be calculated.
+By default, pairwise complete observations for each pair of SNPs are
+taken to construct the dissimilarity matrix.
+The issue affects the building of the hierarchical tree but the testing of
+a given cluster remains as described before.
+
+The function \texttt{cluster\char`_position} estimates a hierarchical tree based
+on the genomic positions of the SNPs from all the studies.
+The problems mentioned above do not show up here since SNPs, may be
+different ones for various data sets, can still be uniquely assigned to
+genomic regions.
+
+The only differences in the function calls are that the arguments \texttt{x},
+\texttt{y}, and \texttt{clvar} are now each a list of matrices instead of
+just a single matrix.  Note that the order of the list elements of the arguments
+\texttt{x}, \texttt{y}, and \texttt{clvar} matter, i.e. the user has to
+stick to the order that the first element of the three lists corresponds to
+the first data set, the second element to the second data sets, and so on.
+One would replace the corresponding element of the list containing the
+control covariates (argument \texttt{clvar}) by \texttt{NULL} if some data set
+has no control covariates.
+If none of the data sets have control covariates, then one can simply omit the
+argument. Note that the argument \texttt{block} defines the second level of the
+tree which is assumed to be the same for all data sets or studies.
+The argument \texttt{block} has to be a \texttt{data.frame} which contains
+all the column names (of all the  data sets or studies) and their assignment
+to the blocks.
+
+The example below demonstrates the functions \texttt{cluster\char`_var} and
+\texttt{test\char`_hierarchy} for two data sets / studies measuring the
+same SNPs.
+
+<<>>=
+# The data sets need to be stored in different elements of a list.
+# Note that the order has to be the same for all the lists.
+# As a simple example, we artificially split the observations of the
+# toy data set in two parts, i.e. two data sets.
+set.seed(89)
+ind1 <- sample(1:500, 250)
+ind2 <- setdiff(1:500, ind1)
+sim.geno.2dat  <- list(sim.geno[ind1, ],
+                       sim.geno[ind2, ])
+sim.clvar.2dat <- list(sim.clvar[ind1, ],
+                       sim.clvar[ind2, ])
+sim.pheno.2dat <- list(sim.pheno[ind1],
+                       sim.pheno[ind2])
+
+# Cluster the SNPs
+dendr <- cluster_var(x = sim.geno.2dat,
+                     block = block,
+                     seed = 1234)
+                     # # the following arguments have to be specified
+                     # # for parallel computation
+                     # parallel = "multicore",
+                     # ncpus = 2)
+
+# Test the hierarchy using multi sample split
+result <- test_hierarchy(x = sim.geno.2dat,
+                         y = sim.pheno.2dat,
+                         clvar = sim.clvar.2dat,
+                         dendr = dendr,
+                         family = "binomial",
+                         seed = 1234)
+                         # # the following arguments have to be
+                         # # specified for parallel computation
+                         # parallel = "multicore",
+                         # ncpus = 2)
+@
+
+The above \textsf{R} code can be evaluated in parallel if one adds the
+two commented arguments parallel and ncpus; compare with Section
+\ref{subsec.parallel} for more details about the software for parallel
+computing.
+
+The output shows three significant groups of SNPs and one single SNP.
+
+<<>>=
+print(result, n.terms = 4)
+@
+
+The significance of a cluster is based on the information of both data
+sets. For a given cluster, the p-values of each data set were aggregated using
+Stouffer's rule as in Section 4 in \cite{renaux18} or \cite{stouffer49}.
+Those aggregated p-values are
+displayed in the output above. We cannot judge which data set (or both or
+combined) inherits a strong signal such that a cluster is shown significant
+but that is not the goal. The goal is to combine the information of multiple
+studies.
+
+The crucial point is that the testing procedure goes top-down through a single
+jointly estimated tree for all the studies and only continues if at least one
+child is significant (based on the aggregated p-values of the multiple data
+sets) of a given cluster. The algorithm determines where to stop and naturally
+we get one output for all the studies. A possible single jointly estimated tree
+of the above \textsf{R} code is illustrated in Figure \ref{fig7}. In our
+example, both data sets measure the same SNPs. If that would not be the case,
+then intersection of the cluster and each data set is taken before calculating
+a p-value per data set / study and then aggregating those.
+
+
+\begin{figure}[!htb]
+\begin{center}
+\begin{tikzpicture}[level distance=1.8cm,
+  level 1/.style={sibling distance=5.5cm},
+  level 2/.style={sibling distance=3cm},
+  level 3/.style={sibling distance=1.5cm}]
+\node (z) {entire data}
+  child {node (a) {chrom 1}
+    child {node (aa) [text width=1.5cm]{SNP.22 SNP.41 $\ldots$}
+        child {node (aaa) {$\vdots$}}
+        child {node (aab) {$\vdots$}}}
+    child {node (ab) [text width=1.5cm]{SNP.1 SNP.3 $\ldots$}
+        child {node (aaa) {$\vdots$}}
+        child {node (aab) {$\vdots$}}}
+  }
+  child {node (b) {chrom 2}
+    child {node (ba) [text width=1.5cm]{SNP.544 SNP.513 $\ldots$}
+            child {node (aaa) {$\vdots$}}
+            child {node (aab) {$\vdots$}}}
+    child {node (bb) [text width=1.5cm]{SNP.647 SNP.648 $\ldots$}
+            child {node (aaa) {$\vdots$}}
+            child {node (aab) {$\vdots$}}}
+  };
+\end{tikzpicture}
+\caption{Illustration of a possible single jointly estimated tree for
+multiple studies based on clustering the SNPs. The second level of the
+hierarchical tree is defined by chromosome 1 and 2 (defined by the argument
+\texttt{block} of the functions \texttt{cluster\char`_var} /
+\texttt{cluster\char`_position}). The function \texttt{cluster\char`_var} /
+\texttt{cluster\char`_position} builds a separate
+hierarchical tree for each of the chromosomes.}\label{fig7}
+\end{center}
+\end{figure}
+
+
+\bibliographystyle{apalike}
+\bibliography{references}
+
+\end{document}
+

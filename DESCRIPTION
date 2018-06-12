@@ -1,0 +1,38 @@
+Package: hierinf
+Type: Package
+Title: Hierarchical Inference
+Version: 0.4.3
+Authors@R: c(person("Claude", "Renaux", role = c("aut", "cre"), 
+                    email = "renaux@stat.math.ethz.ch"), 
+             person("Laura", "Buzdugan", role = c("aut")), 
+             person("Markus", "Kalisch", role = c("aut")), 
+             person("Peter", "Bühlmann", role = c("aut")))
+Description: Tools to perform hierarchical inference for one or multiple 
+    studies / data sets based on high-dimensional multivariate (generalised) 
+    linear models. A possible application is to perform hierarchical inference 
+    for GWA studies to find significant groups or single SNPs (if the signal 
+    is strong) in a data-driven and automated procedure. The method is based 
+    on an efficient hierarchical multiple testing correction and controls the 
+    FWER. The functions can easily be run in parallel.
+License: GPL-3 | file LICENSE
+Encoding: UTF-8
+LazyData: yes
+Depends: 
+    R (>= 3.5.0)
+Imports: 
+    fmsb,
+    glmnet, 
+    parallel
+Suggests: 
+    knitr,
+    MASS,
+    testthat
+biocViews:
+    Clustering, 
+    GenomeWideAssociation,
+    LinkageDisequilibrium, 
+    Regression,
+    SNP
+VignetteBuilder: 
+    knitr
+RoxygenNote: 6.0.1

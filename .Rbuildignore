@@ -1,0 +1,6 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^hierinf.Rproj$
+^README\.Rmd$
+^bioc-comments.md$
+^\.travis\.yml$
