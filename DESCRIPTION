@@ -1,7 +1,7 @@
 Package: hierinf
 Type: Package
 Title: Hierarchical Inference
-Version: 0.4.3
+Version: 0.5.0
 Authors@R: c(person("Claude", "Renaux", role = c("aut", "cre"), 
                     email = "renaux@stat.math.ethz.ch"), 
              person("Laura", "Buzdugan", role = c("aut")), 

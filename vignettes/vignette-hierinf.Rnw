@@ -126,7 +126,7 @@ data(simGWAS)
 
 # The genotype, phenotype and the control variables are saved in
 # different objects.
-sim.geno <- simGWAS$x
+sim.geno  <- simGWAS$x
 sim.pheno <- simGWAS$y
 sim.clvar <- simGWAS$clvar
 @
