@@ -13,8 +13,6 @@
 #' contain the group assignment and to be a vector of type character or numeric.
 #' If not supplied, the second level is built based on the
 #' data.
-#' @param seed an object to initialize the random number generator.
-#' If not supplied, the state of the random generator state is not changed.
 #' @param sort.parallel a logical indicating whether the values are sorted with respect to
 #' the size of the block. This can reduce the run time for parallel computation.
 #' @param parallel type of parallel computation to be used. See the 'Details' section.
@@ -82,8 +80,7 @@
 #' @name cluster_position
 #' @export
 
-cluster_position <- function(position, block = NULL, seed = NULL,
-                             sort.parallel =  TRUE,
+cluster_position <- function(position, block = NULL,sort.parallel =  TRUE,
                              parallel = c("no", "multicore", "snow"),
                              ncpus = 1L, cl = NULL) {
 
@@ -92,10 +89,6 @@ cluster_position <- function(position, block = NULL, seed = NULL,
 
   if (do.parallel && parallel == "multicore" && .Platform$OS.type == "windows") {
     stop("The argument parallel = 'multicore' is not available for windows. Use parallel = 'snow' for parallel computing or parallel = 'no' for serial execution of the code.")
-  }
-
-  if (!is.null(seed)) {
-    set.seed(seed)
   }
 
   if (!is.list(position)) { # A data.frame is as well a list.

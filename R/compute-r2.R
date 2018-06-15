@@ -53,6 +53,7 @@
 #' y <- x %*% beta + rnorm(n)
 #'
 #' dendr <- cluster_var(x = x)
+#' set.seed(47)
 #' sign.clusters <- test_hierarchy(x = x, y = y, dendr = dendr,
 #'                                 family = "gaussian")
 #'

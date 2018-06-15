@@ -13,6 +13,18 @@
 #
 # They recommend to use delta equal to 0.01.
 
+
+# We import the functions glm and glm.control from the stats package becuase
+# those functions are called many times for family = "binomial".
+# See book http://r-pkgs.had.co.nz/namespace.html
+# Wickham, Hadley. R packages: organize, test, document, and share your code.
+# O'Reilly Media Inc., 2015.
+# "If you are using functions repeatedly, you can avoid :: by importing the
+# function with @importFrom pkg fun. This also has a small performance benefit,
+# because :: adds approximately 5 microsecond to function evaluation time."
+
+#' @importFrom stats glm glm.control
+
 MEL <- function(x, y, maxit, delta = 0.01, epsilon = 1e-6) {
   # mean of y but we bound it awy from 0 and 1. See Equation (10) on page 8.
   pi.hat <- max(delta, min(1 - delta, mean(y)))
@@ -27,10 +39,10 @@ MEL <- function(x, y, maxit, delta = 0.01, epsilon = 1e-6) {
   # Suppress warning that "non-integer counts in a binomial glm!" because the
   # function glm expects in the first column to be the number of successes and
   # the second column to be the number of failures
-  suppressWarnings(res <- stats::glm(pseudo.y ~ x, family = "binomial",
-                                        control = stats::glm.control(
-                                          epsilon = epsilon,
-                                          maxit = maxit)))
+  suppressWarnings(res <- glm(pseudo.y ~ x, family = "binomial",
+                              control = glm.control(
+                                epsilon = epsilon,
+                                maxit = maxit)))
 
   return(res)
 }

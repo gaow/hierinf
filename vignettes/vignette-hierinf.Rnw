@@ -206,8 +206,7 @@ block <- data.frame("colname" = paste0("SNP.", 1:1000),
 
 # Cluster the SNPs
 dendr <- cluster_var(x = sim.geno,
-                     block = block,
-                     seed = 1234)
+                     block = block)
                      # # the following arguments have to be specified
                      # # for parallel computation
                      # parallel = "multicore",
@@ -236,8 +235,7 @@ position <- data.frame("colnames" = paste0("SNP.", 1:1000),
 # Build the hierarchical tree based on the position
 # The argument block defines the second level of the tree structure.
 dendr.pos <- cluster_position(position = position,
-                              block = block,
-                              seed = 1234)
+                              block = block)
                               # # the following arguments have to be
                               # # specified for parallel computation
                               # parallel = "multicore",
@@ -270,13 +268,13 @@ testing in the hierarchy of the two chromosomes and their children.
 
 <<>>=
 # Test the hierarchy using multi sample split
+set.seed(1234)
 result <- test_hierarchy(x = sim.geno,
                          y = sim.pheno,
                          clvar = sim.clvar,
                          # alternatively: dendr = dendr.pos
                          dendr = dendr,
-                         family = "binomial",
-                         seed = 1234)
+                         family = "binomial")
                          # # the following arguments have to be
                          # # specified for parallel computation
                          # parallel = "multicore",
@@ -480,20 +478,19 @@ sim.pheno.2dat <- list(sim.pheno[ind1],
 
 # Cluster the SNPs
 dendr <- cluster_var(x = sim.geno.2dat,
-                     block = block,
-                     seed = 1234)
+                     block = block)
                      # # the following arguments have to be specified
                      # # for parallel computation
                      # parallel = "multicore",
                      # ncpus = 2)
 
 # Test the hierarchy using multi sample split
+set.seed(1234)
 result <- test_hierarchy(x = sim.geno.2dat,
                          y = sim.pheno.2dat,
                          clvar = sim.clvar.2dat,
                          dendr = dendr,
-                         family = "binomial",
-                         seed = 1234)
+                         family = "binomial")
                          # # the following arguments have to be
                          # # specified for parallel computation
                          # parallel = "multicore",

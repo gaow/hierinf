@@ -166,26 +166,28 @@ test_that("cluster_var: check return object for multiple data sets", {
   expect_identical(labels(res$res.tree[[1]]), c("c5", "c1", "c2"))
 })
 
+test_that("cluster_var: check if the functions runs in parallel", {
+  # Run this test only locally. (Not suitable for Windows)
+  skip_on_bioc()
+  skip_on_os("windows")
 
-## TODO Run this test only locally. (Not suitable for Windows)
-
-# test_that("cluster_var: check if the functions runs in parallel", {
-#   set.seed(888)
-#   tt <- matrix(rnorm(300), ncol = 30)
-#   colnames(tt) <- paste0("rs", 1:30)
-#   res_p <- cluster_var(x = tt, d = NULL, method = "average",
-#                      block = data.frame(paste0("rs", 1:30), rep(c(1, 2), each = 15),
-#                                         stringsAsFactors = FALSE),
-#                      use = "everything", seed = 999, sort.parallel = TRUE,
-#                      parallel = "multicore", ncpus = 2)
-#   expect_is(res_p, "hierD")
-#   expect_type(res_p, "list")
-#   expect_is(res_p[[1]], "dendrogram")
-#   expect_is(res_p[[2]], "dendrogram")
-#   expect_equal(length(res_p), 2)
-#   expect_true(all(labels(res_p[[1]]) %in% paste0("rs", 1:15))) # labels res1 - rs15
-#   expect_true(all(labels(res_p[[2]]) %in% paste0("rs", 16:30))) # labels rs16 - rs30
-# })
+  set.seed(888)
+  tt <- matrix(rnorm(300), ncol = 30)
+  colnames(tt) <- paste0("rs", 1:30)
+  set.seed(999)
+  res_p <- cluster_var(x = tt, d = NULL, method = "average",
+                     block = data.frame(paste0("rs", 1:30), rep(c(1, 2), each = 15),
+                                        stringsAsFactors = FALSE),
+                     use = "everything", sort.parallel = TRUE,
+                     parallel = "multicore", ncpus = 2)
+  expect_is(res_p, "hierD")
+  expect_type(res_p, "list")
+  expect_is(res_p$res.tree[[1]], "dendrogram")
+  expect_is(res_p$res.tree[[2]], "dendrogram")
+  expect_equal(length(res_p), 2)
+  expect_true(all(labels(res_p$res.tree[[1]]) %in% paste0("rs", 1:15))) # labels res1 - rs15
+  expect_true(all(labels(res_p$res.tree[[2]]) %in% paste0("rs", 16:30))) # labels rs16 - rs30
+})
 
 
 

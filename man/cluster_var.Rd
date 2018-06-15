@@ -5,8 +5,8 @@
 \title{Build Hierarchical Tree based on Hierarchical Clustering}
 \usage{
 cluster_var(x = NULL, d = NULL, block = NULL, method = "average",
-  use = "pairwise.complete.obs", seed = NULL, sort.parallel = TRUE,
-  parallel = c("no", "multicore", "snow"), ncpus = 1L, cl = NULL)
+  use = "pairwise.complete.obs", sort.parallel = TRUE, parallel = c("no",
+  "multicore", "snow"), ncpus = 1L, cl = NULL)
 }
 \arguments{
 \item{x}{a matrix or list of matrices for multiple data sets. The matrix or
@@ -35,9 +35,6 @@ of missing values. This is important for multiple data sets which do not measure
 exactly the same variables. If data is specified using the argument \code{x}, the
 dissimilarity matrix for the hierarchical clustering is calculated using
 correlation See the 'Details' section and \code{\link[stats]{cor}} for all the options.}
-
-\item{seed}{an object to initialize the random number generator.
-If not supplied, the state of the random generator state is not changed.}
 
 \item{sort.parallel}{a logical indicating whether the values are sorted with respect to
 the size of the block. This can reduce the run time for parallel computation.}

@@ -9,11 +9,16 @@ There were no ERRORs, WARNINGs or NOTEs.
 ## R CMD BiocCheck results
 There were no ERRORs or WARNINGs. 
 
-There were 6 NOTEs:
+There were 7 NOTEs:
 
 * "Consider adding these automatically suggested biocViews: ATACSeq" 
 
   This biocViews category does not suit our package. 
+  
+* "skip_on_bioc() found in testthat files: test-cluster_var.R test-multisplit.R
+  test-test_hierarchy.R test-test_only_hierarchy.R"  
+  
+  We use skip_on_bioc() such that the testing takes less time. 
 
 * "Avoid '<<-' if possible (found in 1 files)"   
 

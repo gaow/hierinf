@@ -6,8 +6,8 @@
 \usage{
 test_only_hierarchy(x, y, dendr, res.multisplit, clvar = NULL,
   family = c("gaussian", "binomial"), alpha = 0.05, global.test = TRUE,
-  verbose = FALSE, seed = NULL, sort.parallel = TRUE, parallel = c("no",
-  "multicore", "snow"), ncpus = 1L, cl = NULL, check.input = TRUE,
+  verbose = FALSE, sort.parallel = TRUE, parallel = c("no", "multicore",
+  "snow"), ncpus = 1L, cl = NULL, check.input = TRUE,
   unique.colnames.x = NULL)
 }
 \arguments{
@@ -39,9 +39,6 @@ be performed.}
 
 \item{verbose}{a logical value indicating whether the progress of the computation
 should be printed in the console.}
-
-\item{seed}{an object to initialize the random number generator.
-If not supplied, the state of the random generator state is not changed.}
 
 \item{sort.parallel}{a logical indicating whether the values are sorted with respect to
 the size of the block. This can reduce the run time for parallel computation.}
@@ -131,6 +128,7 @@ beta[c(5, 20, 46)] <- 1
 y <- x \%*\% beta + rnorm(n)
 
 dendr1 <- cluster_var(x = x)
+set.seed(76)
 res.multisplit1 <- multisplit(x = x, y = y, family = "gaussian")
 sign.clusters1 <- test_only_hierarchy(x = x, y = y, dendr = dendr1,
                                       res.multisplit = res.multisplit1,

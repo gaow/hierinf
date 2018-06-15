@@ -24,8 +24,6 @@
 #' exactly the same variables. If data is specified using the argument \code{x}, the
 #' dissimilarity matrix for the hierarchical clustering is calculated using
 #' correlation See the 'Details' section and \code{\link[stats]{cor}} for all the options.
-#' @param seed an object to initialize the random number generator.
-#' If not supplied, the state of the random generator state is not changed.
 #' @param sort.parallel a logical indicating whether the values are sorted with respect to
 #' the size of the block. This can reduce the run time for parallel computation.
 #' @param parallel type of parallel computation to be used. See the 'Details' section.
@@ -105,7 +103,7 @@
 #' @export
 
 cluster_var <- function(x = NULL, d = NULL, block = NULL, method = "average",
-                        use = "pairwise.complete.obs", seed = NULL, sort.parallel =  TRUE,
+                        use = "pairwise.complete.obs", sort.parallel =  TRUE,
                         parallel = c("no", "multicore", "snow"), ncpus = 1L,
                         cl = NULL) {
 
@@ -114,10 +112,6 @@ cluster_var <- function(x = NULL, d = NULL, block = NULL, method = "average",
 
   if (do.parallel && parallel == "multicore" && .Platform$OS.type == "windows") {
     stop("The argument parallel = 'multicore' is not available for windows. Use parallel = 'snow' for parallel computing or parallel = 'no' for serial execution of the code.")
-  }
-
-  if (!is.null(seed)) {
-    set.seed(seed)
   }
 
   ## check input

@@ -1,5 +1,5 @@
 
-hierinf (0.4.3)
+hierinf (0.99.0)
 ===============
 
 ## New features

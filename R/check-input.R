@@ -24,7 +24,8 @@ check_input_cl <- function(x, d, method, block, use) {
     if (any(is.na(d))) {
       stop("The input d is required to have no missing values.")
     }
-    if(class(d) == "dist") {
+    # The function is(d, "dist") checks whether the object d is of class dist.
+    if(methods::is(d, "dist")) {
       if (is.null(labels(d))) {
         stop("The distance matrix d is required to have labels. The labels should correspond to the column names of the data set or data sets stored in x. For example, the function dist uses the row names to set the labels.")
       }
@@ -40,7 +41,8 @@ check_input_cl <- function(x, d, method, block, use) {
         stop("The matrix d is required to be symmetric.")
       }
     }
-    if(!is.matrix(d) & class(d) != "dist") {
+    # The function is(d, "dist") checks whether the object d is of class dist.
+    if(!is.matrix(d) & !methods::is(d, "dist")) {
      stop("The argument d is required to be either a matrix or an object of class dist.")
     }
   }

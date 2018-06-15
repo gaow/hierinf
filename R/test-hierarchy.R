@@ -25,8 +25,6 @@
 #' be performed.
 #' @param verbose logical value indicating whether the progress of the computation
 #' should be printed in the console.
-#' @param seed an object to initialize the random number generator.
-#' If not supplied, the state of the random generator state is not changed.
 #' @param sort.parallel a logical indicating whether the values are sorted with respect to
 #' the size of the block. This can reduce the run time for parallel computation.
 #' @param parallel type of parallel computation to be used. See the 'Details' section.
@@ -111,6 +109,7 @@
 #' y <- x %*% beta + rnorm(n)
 #'
 #' dendr1 <- cluster_var(x = x)
+#' set.seed(68)
 #' sign.clusters1 <- test_hierarchy(x = x, y = y, dendr = dendr1,
 #'                                 family = "gaussian")
 #'
@@ -120,6 +119,7 @@
 #'                     "block" = rep(c(1, 2), each = p/2),
 #'                     stringsAsFactors = FALSE)
 #' dendr2 <- cluster_var(x = x, block = block)
+#' set.seed(23)
 #' sign.clusters2 <- test_hierarchy(x = x, y = y, dendr = dendr2,
 #'                                 family = "gaussian")
 #'
@@ -139,17 +139,12 @@ test_hierarchy <- function(x, y, dendr, clvar = NULL,
                            family = c("gaussian", "binomial"),
                            B = 50, proportion.select = 1/6, standardize = FALSE,
                            alpha = 0.05, global.test = TRUE,
-                           verbose = FALSE, seed = NULL, sort.parallel =  TRUE,
+                           verbose = FALSE, sort.parallel =  TRUE,
                            parallel = c("no", "multicore", "snow"),
                            ncpus = 1L, cl = NULL) {
 
   family <- match.arg(family)
   parallel <- match.arg(parallel)
-
-  ## Set seed
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
 
   ## Check input
   res <- check_input_testing(x = x, y = y, clvar = clvar, family = family,
@@ -176,7 +171,7 @@ test_hierarchy <- function(x, y, dendr, clvar = NULL,
   res.multisplit <- multisplit(x = res$x, y = res$y, clvar = res$clvar, B = B,
                                proportion.select = proportion.select,
                                standardize = standardize, family = family,
-                               seed = NULL, parallel = parallel, ncpus = ncpus,
+                               parallel = parallel, ncpus = ncpus,
                                cl = cl, check.input = FALSE)
 
   # Stop testing if some error occurred during the function call of multisplit
@@ -194,7 +189,7 @@ test_hierarchy <- function(x, y, dendr, clvar = NULL,
                                      res.multisplit = res.multisplit,
                                      clvar = res$clvar, family = family,
                                      alpha = alpha, global.test = global.test,
-                                     verbose = verbose, seed = NULL,
+                                     verbose = verbose,
                                      sort.parallel =  sort.parallel,
                                      parallel = parallel, ncpus = ncpus,
                                      cl = cl, check.input = FALSE,

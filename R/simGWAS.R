@@ -35,7 +35,8 @@
 #' sim.clvar <- simGWAS$clvar
 #'
 #' dendr <- cluster_var(x = sim.geno)
+#' set.seed(1234)
 #' result <- test_hierarchy(x = sim.geno, y = sim.pheno,
 #'                          dendr = dendr, clvar = sim.clvar,
-#'                          family = "binomial", seed = 1234)
+#'                          family = "binomial")
 "simGWAS"

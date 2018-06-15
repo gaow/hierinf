@@ -4,9 +4,8 @@
 \alias{cluster_position}
 \title{Build Hierarchical Tree based on Position}
 \usage{
-cluster_position(position, block = NULL, seed = NULL,
-  sort.parallel = TRUE, parallel = c("no", "multicore", "snow"),
-  ncpus = 1L, cl = NULL)
+cluster_position(position, block = NULL, sort.parallel = TRUE,
+  parallel = c("no", "multicore", "snow"), ncpus = 1L, cl = NULL)
 }
 \arguments{
 \item{position}{a data frame with two columns specifying the variable names
@@ -21,9 +20,6 @@ variable names and to be of type character. The second column is required to
 contain the group assignment and to be a vector of type character or numeric.
 If not supplied, the second level is built based on the
 data.}
-
-\item{seed}{an object to initialize the random number generator.
-If not supplied, the state of the random generator state is not changed.}
 
 \item{sort.parallel}{a logical indicating whether the values are sorted with respect to
 the size of the block. This can reduce the run time for parallel computation.}

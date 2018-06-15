@@ -5,7 +5,7 @@
 \title{Multi-sample splitting}
 \usage{
 multisplit(x, y, clvar = NULL, B = 50, proportion.select = 1/6,
-  standardize = FALSE, family = c("gaussian", "binomial"), seed = NULL,
+  standardize = FALSE, family = c("gaussian", "binomial"),
   parallel = c("no", "multicore", "snow"), ncpus = 1L, cl = NULL,
   check.input = TRUE)
 }
@@ -32,9 +32,6 @@ standardized.}
 
 \item{family}{a character string naming a family of the error distribution;
 either \code{"gaussian"} or \code{"binomial"}.}
-
-\item{seed}{an object to initialize the random number generator.
-If not supplied, the state of the random generator state is not changed.}
 
 \item{parallel}{type of parallel computation to be used. See the 'Details' section.}
 
@@ -104,6 +101,7 @@ beta <- rep(0, p)
 beta[c(5, 20, 46)] <- 1
 y <- x \%*\% beta + rnorm(n)
 
+set.seed(84)
 res.multisplit <- multisplit(x = x, y = y, family = "gaussian")
 
 }

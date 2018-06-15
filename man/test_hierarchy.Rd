@@ -6,7 +6,7 @@
 \usage{
 test_hierarchy(x, y, dendr, clvar = NULL, family = c("gaussian",
   "binomial"), B = 50, proportion.select = 1/6, standardize = FALSE,
-  alpha = 0.05, global.test = TRUE, verbose = FALSE, seed = NULL,
+  alpha = 0.05, global.test = TRUE, verbose = FALSE,
   sort.parallel = TRUE, parallel = c("no", "multicore", "snow"),
   ncpus = 1L, cl = NULL)
 }
@@ -44,9 +44,6 @@ be performed.}
 
 \item{verbose}{logical value indicating whether the progress of the computation
 should be printed in the console.}
-
-\item{seed}{an object to initialize the random number generator.
-If not supplied, the state of the random generator state is not changed.}
 
 \item{sort.parallel}{a logical indicating whether the values are sorted with respect to
 the size of the block. This can reduce the run time for parallel computation.}
@@ -136,6 +133,7 @@ beta[c(5, 20, 46)] <- 1
 y <- x \%*\% beta + rnorm(n)
 
 dendr1 <- cluster_var(x = x)
+set.seed(68)
 sign.clusters1 <- test_hierarchy(x = x, y = y, dendr = dendr1,
                                 family = "gaussian")
 
@@ -145,6 +143,7 @@ block <- data.frame("var.name" = paste0("Var", 1:p),
                     "block" = rep(c(1, 2), each = p/2),
                     stringsAsFactors = FALSE)
 dendr2 <- cluster_var(x = x, block = block)
+set.seed(23)
 sign.clusters2 <- test_hierarchy(x = x, y = y, dendr = dendr2,
                                 family = "gaussian")
 

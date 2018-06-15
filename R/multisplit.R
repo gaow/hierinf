@@ -21,8 +21,6 @@
 #' standardized.
 #' @param family a character string naming a family of the error distribution;
 #' either \code{"gaussian"} or \code{"binomial"}.
-#' @param seed an object to initialize the random number generator.
-#' If not supplied, the state of the random generator state is not changed.
 #' @param parallel type of parallel computation to be used. See the 'Details' section.
 #' @param ncpus number of processes to be run in parallel.
 #' @param cl an optional \strong{parallel} or \strong{snow} cluster used if
@@ -91,6 +89,7 @@
 #' beta[c(5, 20, 46)] <- 1
 #' y <- x %*% beta + rnorm(n)
 #'
+#' set.seed(84)
 #' res.multisplit <- multisplit(x = x, y = y, family = "gaussian")
 #'
 #' @references Renaux, C. et al. (2018), Hierarchical inference for genome-wide
@@ -105,8 +104,8 @@
 
 multisplit <- function(x, y, clvar = NULL, B = 50, proportion.select = 1/6,
                        standardize = FALSE, family = c("gaussian", "binomial"),
-                       seed = NULL, parallel = c("no", "multicore", "snow"),
-                       ncpus = 1L, cl = NULL, check.input = TRUE) {
+                       parallel = c("no", "multicore", "snow"), ncpus = 1L,
+                       cl = NULL, check.input = TRUE) {
 
   family <- match.arg(family)
   parallel <- match.arg(parallel)
@@ -114,10 +113,6 @@ multisplit <- function(x, y, clvar = NULL, B = 50, proportion.select = 1/6,
 
   if (do.parallel && parallel == "multicore" && .Platform$OS.type == "windows") {
     stop("The argument parallel = 'multicore' is not available for windows. Use parallel = 'snow' for parallel computing or parallel = 'no' for serial execution of the code.")
-  }
-
-  if (!is.null(seed)) {
-    set.seed(seed)
   }
 
   ## check input
@@ -171,7 +166,7 @@ multisplit <- function(x, y, clvar = NULL, B = 50, proportion.select = 1/6,
   return(resM.all)
 } # {multisplit}
 
-# Create \code{B} splits for a givne data set
+# Create \code{B} splits for a given data set
 #
 # Returns indices for the \code{B} splits, i.e. in.sample and out.sample.
 create_splits_one_data <- function(ind, y, B){

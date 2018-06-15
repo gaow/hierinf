@@ -87,34 +87,37 @@ test_that("multisplit: check return object", {
   expect_true(all(sel.coef[!is.na(sel.coef)] %in% colnames(x)))
 })
 
-## TODO Run this test only locally. (Not suitable for Windows)
+test_that("multisplit: check if the functions runs in parallel", {
+  # Run this test only locally. (Not suitable for Windows)
+  skip_on_bioc()
+  skip_on_os("windows")
 
-# test_that("multisplit: check if the functions runs in parallel", {
-#   n <- 100; p <- 1000; B <- 20; proportion.select <- 1 / 6
-#   sim.geno1 <- matrix(rnorm(n * p), ncol = p, nrow = n)
-#   colnames(sim.geno1) <- paste0("lll", 1:p)
-#
-#   sim.geno2 <- matrix(rnorm(n * p), ncol = p, nrow = n)
-#   colnames(sim.geno2) <- paste0("lll", 1:p)
-#
-#   sim.coef <- rnorm(p, sd = 0.25)
-#   y1 <- sim.geno1 %*% sim.coef + rnorm(10, sd = 0.5)
-#   y2 <- sim.geno2 %*% sim.coef + rnorm(10, sd = 0.5)
-#   res_multisplit <- multisplit(x = list(sim.geno1, sim.geno2), y = list(y1, y2),
-#                                proportion.select = proportion.select, B = B,
-#                                family = "gaussian", seed = 789,
-#                                parallel = "multicore", ncpus = 2)
-#   expect_true(length(res_multisplit) == 2)
-#   expect_is(res_multisplit, "hierM")
-#   expect_true(all(dim(res_multisplit[[1]]$out.sample) == c(B, n / 2)))
-#   expect_true(all(dim(res_multisplit[[2]]$out.sample) == c(B, n / 2)))
-#   expect_true(all(dim(res_multisplit[[1]]$sel.coef) ==
-#                     c(B, floor(n * proportion.select))))
-#   expect_true(all(dim(res_multisplit[[2]]$sel.coef) ==
-#                     c(B, floor(n * proportion.select))))
-#   sel.coef <- res_multisplit[[1]]$sel.coef
-#   expect_true(all(sel.coef[!is.na(sel.coef)] %in% colnames(sim.geno1)))
-#   sel.coef <- res_multisplit[[2]]$sel.coef
-#   expect_true(all(sel.coef[!is.na(sel.coef)] %in% colnames(sim.geno2)))
-# })
+  n <- 100; p <- 1000; B <- 20; proportion.select <- 1 / 6
+  sim.geno1 <- matrix(rnorm(n * p), ncol = p, nrow = n)
+  colnames(sim.geno1) <- paste0("lll", 1:p)
+
+  sim.geno2 <- matrix(rnorm(n * p), ncol = p, nrow = n)
+  colnames(sim.geno2) <- paste0("lll", 1:p)
+
+  sim.coef <- rnorm(p, sd = 0.25)
+  y1 <- sim.geno1 %*% sim.coef + rnorm(10, sd = 0.5)
+  y2 <- sim.geno2 %*% sim.coef + rnorm(10, sd = 0.5)
+  set.seed(789)
+  res_multisplit <- multisplit(x = list(sim.geno1, sim.geno2), y = list(y1, y2),
+                               proportion.select = proportion.select, B = B,
+                               family = "gaussian", parallel = "multicore",
+                               ncpus = 2)
+  expect_true(length(res_multisplit) == 2)
+  expect_is(res_multisplit, "hierM")
+  expect_true(all(dim(res_multisplit[[1]]$out.sample) == c(B, n / 2)))
+  expect_true(all(dim(res_multisplit[[2]]$out.sample) == c(B, n / 2)))
+  expect_true(all(dim(res_multisplit[[1]]$sel.coef) ==
+                    c(B, floor(n * proportion.select))))
+  expect_true(all(dim(res_multisplit[[2]]$sel.coef) ==
+                    c(B, floor(n * proportion.select))))
+  sel.coef <- res_multisplit[[1]]$sel.coef
+  expect_true(all(sel.coef[!is.na(sel.coef)] %in% colnames(sim.geno1)))
+  sel.coef <- res_multisplit[[2]]$sel.coef
+  expect_true(all(sel.coef[!is.na(sel.coef)] %in% colnames(sim.geno2)))
+})
 
