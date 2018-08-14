@@ -4,8 +4,8 @@
 \alias{compute_r2}
 \title{Compute R squared}
 \usage{
-compute_r2(x, y, res.test.hierarchy, clvar = NULL, family = c("gaussian",
-  "binomial"), colnames.cluster = NULL)
+compute_r2(x, y, res.test.hierarchy, clvar = NULL,
+  family = c("gaussian", "binomial"), colnames.cluster = NULL)
 }
 \arguments{
 \item{x}{a matrix or list of matrices for multiple data sets. The matrix or

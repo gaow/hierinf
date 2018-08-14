@@ -128,18 +128,12 @@ adj_pval <- function(pvals, B) {
   gamma.seq <- seq(gamma.min, 1, gamma.step)
 
   # compute the empirical quantile vector
-  gamma.step <- vector("numeric", length = length(gamma.seq))
-  for (g in seq_along(gamma.seq)) {
-    gamma.step[g] <- min(1, stats::quantile(pvals / gamma.seq[g], gamma.seq[g],
-                                            na.rm = TRUE))
-  }
-  # # TODO if we like to replace the loop
-  # quantile_vector <- sapply(seq_along(gamma.seq),
-  #                           function(g, pvals, gamma.seq) {
-  #                             min(1, quantile(pvals / gamma.seq[g],
-  #                                             gamma.seq[g], na.rm = TRUE))
-  #                             }, pvals = pvals,
-  #                           gamma.seq = gamma.seq)
+  gamma.step <- vapply(X = gamma.seq,
+                       FUN = function(g, pvals) {
+                         min(1, stats::quantile(pvals / g, g, na.rm = TRUE))
+                       },
+                       FUN.VALUE = numeric(1),
+                       pvals = pvals)
 
   # compute the adjusted p value
   # Equation 4 on page 333 in Mandozzi and Buehlmann (2016)

@@ -5,10 +5,10 @@
 \title{Hierarchical Testing}
 \usage{
 test_only_hierarchy(x, y, dendr, res.multisplit, clvar = NULL,
-  family = c("gaussian", "binomial"), alpha = 0.05, global.test = TRUE,
-  verbose = FALSE, sort.parallel = TRUE, parallel = c("no", "multicore",
-  "snow"), ncpus = 1L, cl = NULL, check.input = TRUE,
-  unique.colnames.x = NULL)
+  family = c("gaussian", "binomial"), alpha = 0.05,
+  global.test = TRUE, verbose = FALSE, sort.parallel = TRUE,
+  parallel = c("no", "multicore", "snow"), ncpus = 1L, cl = NULL,
+  check.input = TRUE, unique.colnames.x = NULL)
 }
 \arguments{
 \item{x}{a matrix or list of matrices for multiple data sets. The matrix or

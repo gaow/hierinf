@@ -181,13 +181,11 @@ test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
 
     # Check that the selected variables in res.multisplit are contained in
     # unique.colnames.x
-    len.x <- length(x) # this corresponds to the number of data sets
-    colnames.multisplit <- vector(mode = "character", length = 0)
-    for (i in seq_len(len.x)) {
-      colnames.multisplit <- c(colnames.multisplit,
-                               unique(as.vector(res.multisplit[[i]]$sel.coef)))
-    }
-    unique.coln.multisplit <- unique(x = colnames.multisplit)
+    colnames.multisplit <- lapply(X = res.multisplit,
+                                  FUN = function(x) {
+                                    unique(as.vector(x$sel.coef))
+                                  })
+    unique.coln.multisplit <- unique(unlist(colnames.multisplit))
     unique.coln.multisplit <- unique.coln.multisplit[!is.na(unique.coln.multisplit)]
     if (!all(unique.coln.multisplit %in% unique.colnames.x)) {
       stop("The selected variables in the output of the function call to test_hierarchy or multisplit does not match the column names of the argument x.")
@@ -460,7 +458,7 @@ test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
       # If an error occurred during the computation of the top level of the tree (i.e. there are no blocks),
       # then output all the error messages and stop running.
       if (!is.null(do.call(c, res.blocks["error", ]))) {
-        stop(paste("There occurred an errors while testing the top level of the tree.",
+        stop(paste("There occurred errors while testing the top level of the tree.",
                    "All the error messages are printed below:",
                    paste(do.call(c, res.blocks["error", ]),
                          collapse = "\n"),

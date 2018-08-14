@@ -5,8 +5,8 @@
 \title{Build Hierarchical Tree based on Hierarchical Clustering}
 \usage{
 cluster_var(x = NULL, d = NULL, block = NULL, method = "average",
-  use = "pairwise.complete.obs", sort.parallel = TRUE, parallel = c("no",
-  "multicore", "snow"), ncpus = 1L, cl = NULL)
+  use = "pairwise.complete.obs", sort.parallel = TRUE,
+  parallel = c("no", "multicore", "snow"), ncpus = 1L, cl = NULL)
 }
 \arguments{
 \item{x}{a matrix or list of matrices for multiple data sets. The matrix or

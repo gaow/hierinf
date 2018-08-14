@@ -380,6 +380,8 @@ test_that("test_hierarchy: check output (Example III multiple data sets)", {
 
 ### Example IV unbalanced data sets ###
 test_that("test_hierarchy: check output (Example IV multiple data sets)", {
+  skip_on_bioc()
+
   ## simulate index
   p <- 5
   B <- 50
