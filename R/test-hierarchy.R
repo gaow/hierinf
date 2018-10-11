@@ -11,7 +11,7 @@
 #' have to be of type numeric. For \code{family = "binomial"}, the response
 #' is required to be a binary vector taking values 0 and 1.
 #' @param dendr the output of one of the functions
-#' \code{\link[hierinf]{cluster_var}} or \code{\link[hierinf]{cluster_position}}.
+#' \code{\link{cluster_var}} or \code{\link{cluster_position}}.
 #' @param clvar a matrix or list of matrices of control variables.
 #' @param family a character string naming a family of the error distribution;
 #' either \code{"gaussian"} or \code{"binomial"}.
@@ -33,13 +33,13 @@
 #' \code{parallel = "snow"}. If not supplied, a cluster on the local machine is created.
 #'
 #' @details The hierarchial testing requires the output of one of the functions
-#' \code{\link[hierinf]{cluster_var}} or \code{\link[hierinf]{cluster_position}}
+#' \code{\link{cluster_var}} or \code{\link{cluster_position}}
 #' as an input (argument \code{dendr}).
 #'
 #' The function first performs multi-sample splitting step.
 #' A given data with \code{nobs} is randomly split in two halves w.r.t.
 #' the observations and \code{nobs * proportion.select} variables are selected
-#' using Lasso (implemented in \code{\link[glmnet]{glmnet}}) on one half.
+#' using Lasso (implemented in \code{\link{glmnet}}) on one half.
 #' Control variables are not penalized if supplied
 #' using the argument \code{clvar}. This is repeated \code{B} times for each
 #' data set if multiple data sets are supplied.
@@ -53,7 +53,7 @@
 #' different sample splits where the argument \code{B} corresponds to number
 #' of sample splits. If the argument \code{block} was supplied for the building
 #' of the hierarchical tree (i.e. in the function call of either
-#' \code{\link[hierinf]{cluster_var}} or \code{\link[hierinf]{cluster_position}}),
+#' \code{\link{cluster_var}} or \code{\link{cluster_position}}),
 #' i.e. the second level of the hierarchical tree was given, the hierarchical
 #' testing step can be run in parallel across the different blocks by
 #' specifying the arguments \code{parallel} and \code{ncpus}.
@@ -63,7 +63,7 @@
 #' (default), \code{parallel = "multicore"} for parallel evaluation
 #' using forking, and \code{parallel = "snow"} for parallel evaluation
 #' using a parallel socket cluster. It is recommended to select
-#' \code{\link[base]{RNGkind}("L'Ecuyer-CMRG")} and set a seed to ensure that
+#' \code{\link{RNGkind}("L'Ecuyer-CMRG")} and set a seed to ensure that
 #' the parallel computing of the package \code{hierinf} is reproducible.
 #' This way each processor gets a different substream of the pseudo random
 #' number generator stream which makes the results reproducible if the arguments
@@ -91,11 +91,11 @@
 #' cluster.}
 #'
 #' There is a \code{print} method for this class; see
-#' \code{\link[hierinf]{print.hierT}}.
+#' \code{\link{print.hierT}}.
 #'
-#' @seealso \code{\link[hierinf]{cluster_var}},
-#' \code{\link[hierinf]{cluster_position}}, and
-#' \code{\link[hierinf]{compute_r2}}.
+#' @seealso \code{\link{cluster_var}},
+#' \code{\link{cluster_position}}, and
+#' \code{\link{compute_r2}}.
 #'
 #' @examples
 #' n <- 200

@@ -39,10 +39,10 @@ hierarchical tree \code{"res.tree"}.
 The element \code{"block"} defines the second level of the hierarchical
 tree if supplied.
 
-The element \code{"res.tree"} contains a \code{\link[stats]{dendrogram}}
+The element \code{"res.tree"} contains a \code{\link{dendrogram}}
 for each of the blocks defined in the argument \code{block}.
 If the argument \code{block} is \code{NULL} (i.e. not supplied),
-the element contains only one \code{\link[stats]{dendrogram}}.
+the element contains only one \code{\link{dendrogram}}.
 }
 \description{
 Build a hierarchical tree based on the position of the variables.
@@ -66,7 +66,7 @@ argument \code{parallel}: \code{parallel = "no"} for serial evaluation
 (default), \code{parallel = "multicore"} for parallel evaluation
 using forking, and \code{parallel = "snow"} for parallel evaluation
 using a parallel socket cluster. It is recommended to select
-\code{\link[base]{RNGkind}("L'Ecuyer-CMRG")} and set a seed to ensure that
+\code{\link{RNGkind}("L'Ecuyer-CMRG")} and set a seed to ensure that
 the parallel computing of the package \code{hierinf} is reproducible.
 This way each processor gets a different substream of the pseudo random
 number generator stream which makes the results reproducible if the arguments
@@ -92,6 +92,6 @@ Renaux, C. et al. (2018), Hierarchical inference for genome-wide
 association studies: a view on methodology with software. (arXiv:1805.02988)
 }
 \seealso{
-\code{\link[hierinf]{cluster_var}} and
-\code{\link[hierinf]{test_hierarchy}}.
+\code{\link{cluster_var}} and
+\code{\link{test_hierarchy}}.
 }

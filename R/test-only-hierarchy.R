@@ -1,7 +1,7 @@
 #' Hierarchical Testing
 #'
 #' Hierarchical Testing given the output of the function
-#' \code{\link[hierinf]{multisplit}}.
+#' \code{\link{multisplit}}.
 #'
 #' @param x a matrix or list of matrices for multiple data sets. The matrix or
 #' matrices have to be of type numeric and are required to have column names
@@ -12,9 +12,9 @@
 #' have to be of type numeric. For \code{family = "binomial"}, the response
 #' is required to be a binary vector taking values 0 and 1.
 #' @param dendr the output of one of the functions
-#' \code{\link[hierinf]{cluster_var}} or \code{\link[hierinf]{cluster_position}}.
+#' \code{\link{cluster_var}} or \code{\link{cluster_position}}.
 #' @param res.multisplit the output of the function
-#' \code{\link[hierinf]{multisplit}}.
+#' \code{\link{multisplit}}.
 #' @param clvar a matrix or list of matrices of control variables.
 #' @param family a character string naming a family of the error distribution;
 #' either \code{"gaussian"} or \code{"binomial"}.
@@ -31,25 +31,25 @@
 #' \code{parallel = "snow"}. If not supplied, a cluster on the local machine is created.
 #' @param check.input a logical value indicating whether the function should
 #' check the input. This argument is used to call
-#' \code{\link[hierinf]{test_only_hierarchy}} within
-#' \code{\link[hierinf]{test_hierarchy}}.
+#' \code{\link{test_only_hierarchy}} within
+#' \code{\link{test_hierarchy}}.
 #' @param unique.colnames.x a character vector containing the unique column
 #' names of \code{x}. This argument is used to call
-#' \code{\link[hierinf]{test_only_hierarchy}} within
-#' \code{\link[hierinf]{test_hierarchy}}.
+#' \code{\link{test_only_hierarchy}} within
+#' \code{\link{test_hierarchy}}.
 #'
-#' @details The function \code{\link[hierinf]{test_only_hierarchy}} requires the output
-#' of one of the functions \code{\link[hierinf]{cluster_var}} or
-#' \code{\link[hierinf]{cluster_position}} as an input (argument \code{dendr}).
+#' @details The function \code{\link{test_only_hierarchy}} requires the output
+#' of one of the functions \code{\link{cluster_var}} or
+#' \code{\link{cluster_position}} as an input (argument \code{dendr}).
 #' Furthermore it requires the output of the function
-#' \code{\link[hierinf]{multisplit}} as an input (argument \code{res.multisplit}).
+#' \code{\link{multisplit}} as an input (argument \code{res.multisplit}).
 #' Hierarchical testing is performed by going top down through the hierarchical
 #' tree. Testing only continues if at least one child of a given cluster is significant.
 #'
 #' If the argument \code{block} was supplied for the building
 #' of the hierarchical tree (i.e. in the function call of either
-#' \code{\link[hierinf]{cluster_var}} or
-#' \code{\link[hierinf]{cluster_position}}), i.e. the second level of the
+#' \code{\link{cluster_var}} or
+#' \code{\link{cluster_position}}), i.e. the second level of the
 #' hierarchical tree was given, the hierarchical testing step can be run in
 #' parallel across the different blocks by specifying the arguments
 #' \code{parallel} and \code{ncpus}. There is an optional argument \code{cl} if
@@ -58,7 +58,7 @@
 #' (default), \code{parallel = "multicore"} for parallel evaluation
 #' using forking, and \code{parallel = "snow"} for parallel evaluation
 #' using a parallel socket cluster. It is recommended to select
-#' \code{\link[base]{RNGkind}("L'Ecuyer-CMRG")} and set a seed to ensure that
+#' \code{\link{RNGkind}("L'Ecuyer-CMRG")} and set a seed to ensure that
 #' the parallel computing of the package \code{hierinf} is reproducible.
 #' This way each processor gets a different substream of the pseudo random
 #' number generator stream which makes the results reproducible if the arguments
@@ -86,13 +86,13 @@
 #' cluster.}
 #'
 #' There is a \code{print} method for this class; see
-#' \code{\link[hierinf]{print.hierT}}.
+#' \code{\link{print.hierT}}.
 #'
-#' @seealso \code{\link[hierinf]{cluster_var}},
-#' \code{\link[hierinf]{cluster_position}},
-#' \code{\link[hierinf]{multisplit}},
-#' \code{\link[hierinf]{test_hierarchy}}, and
-#' \code{\link[hierinf]{compute_r2}}.
+#' @seealso \code{\link{cluster_var}},
+#' \code{\link{cluster_position}},
+#' \code{\link{multisplit}},
+#' \code{\link{test_hierarchy}}, and
+#' \code{\link{compute_r2}}.
 #'
 #' @examples
 #' n <- 200

@@ -18,9 +18,9 @@ objects for multiple data sets. The vector, vectors, matrix, or matrices
 have to be of type numeric.}
 
 \item{res.test.hierarchy}{the output of one of the functions
-\code{\link[hierinf]{test_hierarchy}},
-\code{\link[hierinf]{test_only_hierarchy}}, or
-\code{\link[hierinf]{multisplit}}.}
+\code{\link{test_hierarchy}},
+\code{\link{test_only_hierarchy}}, or
+\code{\link{multisplit}}.}
 
 \item{clvar}{a matrix or list of matrices of control variables.}
 
@@ -50,7 +50,7 @@ the different data sets if multiple data sets are supplied.
 For a continuous response, the adjusted R squared values is
 calculated for a given cluster or group of variables. The Nagelkerke’s
 R squared values is computed for a binary response using the function
-\code{\link[fmsb]{NagelkerkeR2}}.
+\code{\link{NagelkerkeR2}}.
 
 If \code{colnames.cluster} is not supplied, the R squared value of the
 full model is computed.
@@ -84,5 +84,5 @@ Nagelkerke, N. J. et al. (1991). A note on a general definition of the
 coefficient of determination. Biometrika, 78:691–692.
 }
 \seealso{
-\code{\link[hierinf]{test_hierarchy}}.
+\code{\link{test_hierarchy}}.
 }

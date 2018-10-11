@@ -3,7 +3,7 @@
 #' The data is randomly split in two halves w.r.t. the observations and
 #' variable selection using Lasso is performed on one half. Whereas the second
 #' half and the selected variables are later used for testing by the function
-#' \code{\link[hierinf]{test_only_hierarchy}}. This is repeated multiple times.
+#' \code{\link{test_only_hierarchy}}. This is repeated multiple times.
 #'
 #' @param x a matrix or list of matrices for multiple data sets. The matrix or
 #' matrices have to be of type numeric and are required to have column names
@@ -27,18 +27,18 @@
 #' \code{parallel = "snow"}. If not supplied, a cluster on the local machine is created.
 #' @param check.input a logical value indicating whether the function should
 #' check the input. This argument is used to call
-#' \code{\link[hierinf]{multisplit}} within
-#' \code{\link[hierinf]{test_hierarchy}}.
+#' \code{\link{multisplit}} within
+#' \code{\link{test_hierarchy}}.
 #'
 #' @details A given data with \code{nobs} is randomly split in two halves w.r.t.
 #' the observations and \code{nobs * proportion.select} variables are selected
-#' using Lasso (implemented in \code{\link[glmnet]{glmnet}}) on one half.
+#' using Lasso (implemented in \code{\link{glmnet}}) on one half.
 #' Control variables are not penalized if supplied
 #' using the argument \code{clvar}. This is repeated \code{B} times for each
 #' data set if multiple data sets are supplied. Those splits (i.e. second
 #' halves of observations) and corresponding selected variables are used to
 #' perform hierarchical testing by the function
-#' \code{\link[hierinf]{test_only_hierarchy}}.
+#' \code{\link{test_only_hierarchy}}.
 #'
 #' The multi-sample split step can be run in parallel across the different
 #' sample splits (\code{B} corresponds to number of sample splits) by
@@ -49,7 +49,7 @@
 #' \code{parallel = "multicore"} for parallel evaluation
 #' using forking, and \code{parallel = "snow"} for parallel evaluation
 #' using a parallel socket cluster. It is recommended to select
-#' \code{\link[base]{RNGkind}("L'Ecuyer-CMRG")} and set a seed to ensure that
+#' \code{\link{RNGkind}("L'Ecuyer-CMRG")} and set a seed to ensure that
 #' the parallel computing of the package \code{hierinf} is reproducible.
 #' This way each processor gets a different substream of the pseudo random
 #' number generator stream which makes the results reproducible if the arguments
@@ -72,11 +72,11 @@
 # containing the second subsample of each split, and a matrix of size
 # \code{B x [nobs/6]} containing the selected variables in each split.
 #'
-#' @seealso \code{\link[hierinf]{cluster_var}},
-#' \code{\link[hierinf]{cluster_position}},
-#' \code{\link[hierinf]{test_only_hierarchy}},
-#' \code{\link[hierinf]{test_hierarchy}}, and
-#' \code{\link[hierinf]{compute_r2}}.
+#' @seealso \code{\link{cluster_var}},
+#' \code{\link{cluster_position}},
+#' \code{\link{test_only_hierarchy}},
+#' \code{\link{test_hierarchy}}, and
+#' \code{\link{compute_r2}}.
 #'
 #' @examples
 #' n <- 200

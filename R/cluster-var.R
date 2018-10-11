@@ -9,7 +9,7 @@
 #' to be specified.
 #' @param d a dissimilarity matrix. This can be either a symmetric matrix of
 #' type numeric with column and row names or an object of class
-#' \code{\link[stats]{dist}} with labels. Either the argument \code{x} or \code{d} has
+#' \code{\link{dist}} with labels. Either the argument \code{x} or \code{d} has
 #' to be specified.
 #' @param block a data frame or matrix specifying the second level of the
 #' hierarchical tree. The first column is required to contain the
@@ -18,12 +18,12 @@
 #' If not supplied, the second level is built based on the
 #' data.
 #' @param method the agglomeration method to be used for the hierarchical
-#' clustering. See \code{\link[stats]{hclust}} for details.
+#' clustering. See \code{\link{hclust}} for details.
 #' @param use the method to be used for computing covariances in the presence
 #' of missing values. This is important for multiple data sets which do not measure
 #' exactly the same variables. If data is specified using the argument \code{x}, the
 #' dissimilarity matrix for the hierarchical clustering is calculated using
-#' correlation See the 'Details' section and \code{\link[stats]{cor}} for all the options.
+#' correlation See the 'Details' section and \code{\link{cor}} for all the options.
 #' @param sort.parallel a logical indicating whether the values are sorted with respect to
 #' the size of the block. This can reduce the run time for parallel computation.
 #' @param parallel type of parallel computation to be used. See the 'Details' section.
@@ -57,7 +57,7 @@
 #' (default), \code{parallel = "multicore"} for parallel evaluation
 #' using forking, and \code{parallel = "snow"} for parallel evaluation
 #' using a parallel socket cluster. It is recommended to select
-#' \code{\link[base]{RNGkind}("L'Ecuyer-CMRG")} and set a seed to ensure that
+#' \code{\link{RNGkind}("L'Ecuyer-CMRG")} and set a seed to ensure that
 #' the parallel computing of the package \code{hierinf} is reproducible.
 #' This way each processor gets a different substream of the pseudo random
 #' number generator stream which makes the results reproducible if the arguments
@@ -71,13 +71,13 @@
 #' The element \code{"block"} defines the second level of the hierarchical
 #' tree if supplied.
 #'
-#' The element \code{"res.tree"} contains a \code{\link[stats]{dendrogram}}
+#' The element \code{"res.tree"} contains a \code{\link{dendrogram}}
 #' for each of the blocks defined in the argument \code{block}.
 #' If the argument \code{block} is \code{NULL} (i.e. not supplied),
-#' the element contains only one \code{\link[stats]{dendrogram}}.
+#' the element contains only one \code{\link{dendrogram}}.
 #'
-#'@seealso \code{\link[hierinf]{cluster_position}} and
-#' \code{\link[hierinf]{test_hierarchy}}.
+#'@seealso \code{\link{cluster_position}} and
+#' \code{\link{test_hierarchy}}.
 #'
 #' @examples
 #' library(MASS)

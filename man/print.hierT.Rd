@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{an object of class \code{hierT}}
 
-\item{...}{additional arguments to \code{\link[base]{print.data.frame}}}
+\item{...}{additional arguments to \code{\link{print.data.frame}}}
 
 \item{n.terms}{maximum number of column names or variables names to be
 printed per cluster or group of variables.}
@@ -59,5 +59,5 @@ Renaux, C. et al. (2018), Hierarchical inference for genome-wide
 association studies: a view on methodology with software. (arXiv:1805.02988)
 }
 \seealso{
-\code{\link[base]{invisible}}.
+\code{\link{invisible}}.
 }

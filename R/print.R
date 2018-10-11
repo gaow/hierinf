@@ -4,7 +4,7 @@
 #' \code{hierT}.
 #'
 #' @param x an object of class \code{hierT}
-#' @param ... additional arguments to \code{\link[base]{print.data.frame}}
+#' @param ... additional arguments to \code{\link{print.data.frame}}
 #' @param n.terms maximum number of column names or variables names to be
 #' printed per cluster or group of variables.
 #' @param right logical value indicating whether the values should or should
@@ -17,7 +17,7 @@
 #'
 #' @return The returned values is a invisible copy of the object \code{x}.
 #'
-#' @seealso \code{\link[base]{invisible}}.
+#' @seealso \code{\link{invisible}}.
 #'
 #' @examples
 #' n <- 200
