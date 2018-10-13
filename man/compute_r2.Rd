@@ -45,8 +45,6 @@ and R squared values are computed based on the second halves of observations.
 Finally, the R squared values are averaged over the \code{B} splits and over
 the different data sets if multiple data sets are supplied.
 
-% Alternatively, second half-samples.
-
 For a continuous response, the adjusted R squared values is
 calculated for a given cluster or group of variables. The Nagelkerke’s
 R squared values is computed for a binary response using the function
