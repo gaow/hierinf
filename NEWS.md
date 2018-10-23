@@ -1,9 +1,10 @@
 
-hierinf (0.99.0)
-===============
+# hierinf (1.0.0)
 
 ## New features
+
 * straightforward parallelization
-* additionally option for constructing a hierarchical tree based on spatially 
-  contiguous genomic positions
+
+* additionally option for constructing a hierarchical tree based on spatially contiguous genomic positions
+
 * possibility of jointly analyzing multiple data sets
