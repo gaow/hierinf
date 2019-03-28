@@ -49,8 +49,8 @@ check the input. This argument is used to call
 The returned value is an object of class \code{"hierM"}, consisting
 of a list with number of elements corresponding to the number of data sets.
 Each element (corresponding to a data set
-% with \code{nobs} observations
-) contains a list with two matrices. The first matrix
+% with \code{nobs} observations) contains a list with two matrices.
+The first matrix
 % of size \code{B x [nobs / 2]}
 contains the indices of the second half of variables (which were not used
 to select the variables). The second matrix

@@ -5,7 +5,7 @@ RNGkind("L'Ecuyer-CMRG")
 
 test_that("test_only_hierarchy: check input", {
   expect_error(test_only_hierarchy(x = NULL, y = NULL, dendr = NULL,
-                                               res.multisplit = NULL,
+                                   res.multisplit = NULL,
                                    family = NULL),
                "The response y is required to be a vector or a list of vectors if multiple data sets are present.")
 
@@ -21,7 +21,7 @@ test_that("test_only_hierarchy: check input", {
                "The elements of the list y are required to be numeric vectors or matrices with only one column.")
 
   expect_error(test_only_hierarchy(x = NULL, y = 1:2, dendr = NULL,
-                              res.multisplit = NULL, family = NULL),
+                                   res.multisplit = NULL, family = NULL),
                "The input x is required to be a matrix or a list of matrices if multiple data sets are present.")
 
   expect_error(test_only_hierarchy(x = matrix(1:4, ncol = 2), y = 1:2,
@@ -33,7 +33,7 @@ test_that("test_only_hierarchy: check input", {
   tt <- matrix(1:4, ncol = 2)
   colnames(tt) <- c("a", "b")
   expect_error(test_only_hierarchy(x = tt, y = 1:2, dendr = NULL,
-                              res.multisplit = NULL, family = NULL),
+                                   res.multisplit = NULL, family = NULL),
                "The input res.multisplit is required to be a list.")
 
   set.seed(88)
@@ -106,6 +106,29 @@ test_that("test_only_hierarchy: check input", {
 })
 
 #### Check output with one data set ####
+# This function is used to calculate the p-value of a given split for the
+# binomial case.
+MEL2 <- function(x, y, maxit, delta = 0.01, epsilon = 1e-6) {
+  # mean of y but we bound it awy from 0 and 1. See Equation (10) on page 8.
+  pi.hat <- max(delta, min(1 - delta, mean(y)))
+  # The two parameters delta.0 and delta.1 are constrained such that the average
+  # of the pseudo-observation is equal to pi.hat. See Equation (9) on page 8.
+  delta.0 <- (pi.hat * delta) / (1 + delta)
+  delta.1 <- (1 + pi.hat * delta) / (1 + delta)
+  # Pseudo-observations. See Equation (3) on page 4.
+  y.tilde <- delta.0 * (1 - y) + delta.1 * y
+  pseudo.y <- cbind(y.tilde, 1 - y.tilde)
+
+  # Suppress warning that "non-integer counts in a binomial glm!" because the
+  # function glm expects in the first column to be the number of successes and
+  # the second column to be the number of failures
+  suppressWarnings(res <- glm(pseudo.y ~ x, family = "binomial",
+                              control = glm.control(epsilon = epsilon,
+                                                    maxit = maxit),
+                              model = FALSE, y = FALSE))
+
+  return(res)
+}
 
 # This function calculates the p-value for each of the notes in the tree.
 check_test_hierarchy <- function(x, y, clvar, res.multisplit, B, cluster_test,
@@ -136,7 +159,7 @@ check_test_hierarchy <- function(x, y, clvar, res.multisplit, B, cluster_test,
       clvar_x_reduced <- clvar_x[, sel_i_clvar, drop =  FALSE]
       if (ncol(clvar_x_reduced) == 0) {
         clvar_x_reduced <- rep(1, length(y[ind]))
-        }
+      }
 
       res[b, paste(i, collapse = "_")] <-
         if (length(intersect_i) == 0) { # Equation (2) on page 333 of Mandozzi and Buehlmann (2016)
@@ -147,9 +170,9 @@ check_test_hierarchy <- function(x, y, clvar, res.multisplit, B, cluster_test,
             # on page 333 of Mandozzi and Buehlmann (2016)
             min(1, anova(
               # full model: variables of \hat{S}^{(b)} & clvar
-              hierinf:::MEL(y = y[ind], x = clvar_x, maxit = 100),
+              MEL2(y = y[ind], x = clvar_x, maxit = 100),
               # reduced model: variables of \hat{S}^{(b)} \setminus C & clvar
-              hierinf:::MEL(y = y[ind], x = clvar_x_reduced, maxit = 100),
+              MEL2(y = y[ind], x = clvar_x_reduced, maxit = 100),
               test = "Chisq")$"Pr(>Chi)"[2] *
                 length(sel.coef) / length(intersect_i)
             )
@@ -223,10 +246,15 @@ test_that("test_only_hierarchy: check output (Example I)", {
   set.seed(2)
   res.multisplit <- multisplit(x = sim.geno, y = y, family = "gaussian", B = B)
 
-  # test hierarchy
-  res <- test_only_hierarchy(x = sim.geno, y = y, dendr = dendr,
-                             res.multisplit = res.multisplit,
-                             family = "gaussian")
+  # test hierarchy: Tippett
+  res.T <- test_only_hierarchy(x = sim.geno, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian")
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = sim.geno, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian", agg.method = "Stouffer")
 
   ## Test
   # This list encodes the tree structure
@@ -240,9 +268,14 @@ test_that("test_only_hierarchy: check output (Example I)", {
                        "rsid4",
                        "rsid5")
 
-  compare_with <- check_test_hierarchy(x = sim.geno, y = y, clvar = NULL,
-                                       res.multisplit = res.multisplit,
-                                       B = B, cluster_test = cluster_test)
+  pvals_to_be <- check_test_hierarchy(x = sim.geno, y = y, clvar = NULL,
+                                      res.multisplit = res.multisplit,
+                                      B = B, cluster_test = cluster_test)
+
+
+
+  # Tippett
+  compare_with <- pvals_to_be
 
   expected_result <- data.frame(block = c(NA, NA),
                                 p.value = compare_with[c("rsid1", "rsid4")])
@@ -250,11 +283,27 @@ test_that("test_only_hierarchy: check output (Example I)", {
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
-  expect_equal(res$res.hierarchy$p.value[1], expected_result$p.value[1],
-               tol = 1e-115)
-  expect_equal(res$res.hierarchy$p.value[2], expected_result$p.value[2],
-               tol = 1e-85)
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.T$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-120)
+  expect_equal(res.T$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-88)
+  expect_equal(res.T$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # Stouffer
+  compare_with <- pvals_to_be
+
+  expected_result <- data.frame(block = c(NA, NA),
+                                p.value = compare_with[c("rsid1", "rsid4")])
+  expected_result$significant.cluster <- list(c("rsid1"), c("rsid4"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.S$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-120)
+  expect_equal(res.S$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-88)
+  expect_equal(res.S$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 })
 
@@ -291,11 +340,17 @@ test_that("test_only_hierarchy: check output (Example II)", {
   res.multisplit <- multisplit(x = sim.geno, y = y, clvar = sim.clvar,
                                family = "gaussian", B = B)
 
-  # test hierarchy
-  res <- test_only_hierarchy(x = sim.geno, y = y, clvar = sim.clvar,
-                             dendr = dendr,
-                             res.multisplit = res.multisplit,
-                             family = "gaussian")
+  # test hierarchy: Tippett
+  res.T <- test_only_hierarchy(x = sim.geno, y = y, clvar = sim.clvar,
+                               dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian")
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = sim.geno, y = y, clvar = sim.clvar,
+                               dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian", agg.method = "Stouffer")
 
   ## test
   # This list encodes the tree structure
@@ -309,9 +364,12 @@ test_that("test_only_hierarchy: check output (Example II)", {
                        "rsid4",
                        "rsid5")
 
-  compare_with <- check_test_hierarchy(x = sim.geno, y = y, clvar = sim.clvar,
-                                       res.multisplit = res.multisplit,
-                                       B = B, cluster_test = cluster_test)
+  pvals_to_be <- check_test_hierarchy(x = sim.geno, y = y, clvar = sim.clvar,
+                                      res.multisplit = res.multisplit,
+                                      B = B, cluster_test = cluster_test)
+
+  # Tippett
+  compare_with <- pvals_to_be
 
   expected_result <- data.frame(block = c(NA, NA),
                                 p.value = compare_with[c("rsid1", "rsid4")])
@@ -319,11 +377,27 @@ test_that("test_only_hierarchy: check output (Example II)", {
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
-  expect_equal(res$res.hierarchy$p.value[1], expected_result$p.value[1],
+  expect_equal(res.T$res.hierarchy$p.value[1], expected_result$p.value[1],
                tol = 1e-115)
-  expect_equal(res$res.hierarchy$p.value[2], expected_result$p.value[2],
+  expect_equal(res.T$res.hierarchy$p.value[2], expected_result$p.value[2],
                tol = 1e-85)
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.T$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # Stouffer
+  compare_with <- pvals_to_be
+
+  expected_result <- data.frame(block = c(NA, NA),
+                                p.value = compare_with[c("rsid1", "rsid4")])
+  expected_result$significant.cluster <- list(c("rsid1"), c("rsid4"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.S$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-115)
+  expect_equal(res.S$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-85)
+  expect_equal(res.S$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 })
 
@@ -379,10 +453,6 @@ test_that("test_only_hierarchy: check output (Example III multiple data sets)", 
   y <- list(r1$y, r2$y, r3$y, r4$y)
   # clvar <- list(r1$clvar, r2$clvar, r3$clvar, r4$clvar)
 
-  # c(0.5, 0.5, 0.5, 0.5)
-  stouffer_weights <- sqrt(c(800, 800, 800, 800) / sum(c(800, 800, 800, 800)))
-
-
   # cluster the data
   dendr <- cluster_var(x = x)
   # plot(dendr$res.tree[[1]])
@@ -391,10 +461,16 @@ test_that("test_only_hierarchy: check output (Example III multiple data sets)", 
   set.seed(744)
   res.multisplit <- multisplit(x = x, y = y, family = "gaussian", B = B)
 
-  # test hierarchy
-  res <- test_only_hierarchy(x = x, y = y, dendr = dendr,
-                             res.multisplit = res.multisplit,
-                             family = "gaussian")
+  # test hierarchy: Stouffer
+  res.T <- test_only_hierarchy(x = x, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian")
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = x, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian",
+                               agg.method = "Stouffer")
 
   ## Test
   # This list encodes the tree structure
@@ -426,12 +502,14 @@ test_that("test_only_hierarchy: check output (Example III multiple data sets)", 
 
   pvals_to_be <- rbind(res1, res2, res3, res4)
 
-  compare_with <- apply(X = pvals_to_be, MARGIN = 2,
-                        FUN = function(x, len_y, stouffer_weights) {
-                          pnorm(sum(stouffer_weights * qnorm(x)))
-                        },
-                        len_y = 4, stouffer_weights = stouffer_weights)
 
+
+  # Tippett
+  compare_with <- apply(X = pvals_to_be, MARGIN = 2,
+                        FUN = function(x, len_y) {
+                          max(1 - (1 - min(x))^(len_y), .Machine$double.neg.eps)
+                        },
+                        len_y = 4)
 
   expected_result <- data.frame(block = c(NA, NA),
                                 p.value = compare_with[c("rsid4", "rsid1")])
@@ -439,9 +517,30 @@ test_that("test_only_hierarchy: check output (Example III multiple data sets)", 
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
-  expect_equal(res$res.hierarchy$p.value, expected_result$p.value,
-               tol = 1e-135)
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.T$res.hierarchy$p.value, expected_result$p.value,
+               tol = 1e-145)
+  expect_equal(res.T$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # Stouffer
+  # c(0.5, 0.5, 0.5, 0.5)
+  stouffer_weights <- sqrt(c(800, 800, 800, 800) / sum(c(800, 800, 800, 800)))
+
+  compare_with <- apply(X = pvals_to_be, MARGIN = 2,
+                        FUN = function(x, len_y, stouffer_weights) {
+                          pnorm(sum(stouffer_weights * qnorm(x)))
+                        },
+                        len_y = 4, stouffer_weights = stouffer_weights)
+
+  expected_result <- data.frame(block = c(NA, NA),
+                                p.value = compare_with[c("rsid4", "rsid1")])
+  expected_result$significant.cluster <- list(c("rsid4"), c("rsid1"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.S$res.hierarchy$p.value, expected_result$p.value,
+               tol = 1e-200)
+  expect_equal(res.S$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 })
 
@@ -461,8 +560,6 @@ test_that("test_only_hierarchy: check output (Example IV multiple data sets)", {
   r3 <- gen_one(n = 350, p = p, seed1 = 99, seed2 = 144, seed3 = 100)
   r4 <- gen_one(n = 50, p = p, seed1 = 9, seed2 = 144, seed3 = 1111)
 
-  stouffer_weights <- sqrt(c(800, 200, 350, 50) / sum(c(800, 200, 350, 50)))
-
   x <- list(r1$x, r2$x, r3$x, r4$x)
   y <- list(r1$y, r2$y, r3$y, r4$y)
   # clvar <- list(r1$clvar, r2$clvar, r3$clvar, r4$clvar)
@@ -475,10 +572,16 @@ test_that("test_only_hierarchy: check output (Example IV multiple data sets)", {
   set.seed(6)
   res.multisplit <- multisplit(x = x, y = y, family = "gaussian", B = B)
 
-  # test hierarchy
-  res <- test_only_hierarchy(x = x, y = y, dendr = dendr,
-                             res.multisplit = res.multisplit,
-                             family = "gaussian")
+  # test hierarchy: Tippett
+  res.T <- test_only_hierarchy(x = x, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian")
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = x, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian",
+                               agg.method = "Stouffer")
   ## Test
   # This list encodes the tree structure
   cluster_test <- list(c("rsid1", "rsid2", "rsid3", "rsid4", "rsid5"),
@@ -509,6 +612,29 @@ test_that("test_only_hierarchy: check output (Example IV multiple data sets)", {
 
   pvals_to_be <- rbind(res1, res2, res3, res4)
 
+  # Tippett
+  compare_with <- apply(X = pvals_to_be, MARGIN = 2,
+                        FUN = function(x, len_y) {
+                          max(1 - (1 - min(x))^(len_y), .Machine$double.neg.eps)
+                        },
+                        len_y = 4)
+
+  expected_result <- data.frame(block = c(NA, NA),
+                                p.value = compare_with[c("rsid1", "rsid4")])
+  expected_result$significant.cluster <- list(c("rsid1"), c("rsid4"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.T$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-132)
+  expect_equal(res.T$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-135)
+  expect_equal(res.T$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # Stouffer
+  stouffer_weights <- sqrt(c(800, 200, 350, 50) / sum(c(800, 200, 350, 50)))
+
   compare_with <- apply(X = pvals_to_be, MARGIN = 2,
                         FUN = function(x, len_y, stouffer_weights) {
                           pnorm(sum(stouffer_weights * qnorm(x)))
@@ -521,11 +647,11 @@ test_that("test_only_hierarchy: check output (Example IV multiple data sets)", {
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
-  expect_equal(res$res.hierarchy$p.value[1], expected_result$p.value[1],
+  expect_equal(res.S$res.hierarchy$p.value[1], expected_result$p.value[1],
                tol = 1e-220)
-  expect_equal(res$res.hierarchy$p.value[2], expected_result$p.value[2],
+  expect_equal(res.S$res.hierarchy$p.value[2], expected_result$p.value[2],
                tol = 1e-190)
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.S$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 })
 
@@ -549,8 +675,6 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
   r4 <- gen_one(n = 50, p = p, seed1 = 9, seed2 = 144, seed3 = 1111,
                 num_clvar = 3, coef_clvar = c(0.5, 0.25, 1.25))
 
-  stouffer_weights <- sqrt(c(800, 200, 350, 50) / sum(c(800, 200, 350, 50)))
-
   x <- list(r1$x, r2$x, r3$x, r4$x)
   y <- list(r1$y, r2$y, r3$y, r4$y)
   clvar <- list(r1$clvar, r2$clvar, r3$clvar, r4$clvar) # with co-variables
@@ -564,11 +688,18 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
   res.multisplit <- multisplit(x = x, y = y, clvar = clvar, family = "gaussian",
                                B = B)
 
-  # test hierarchy
-  res <- test_only_hierarchy(x = x, y = y, clvar = clvar,
-                             dendr = dendr,
-                             res.multisplit = res.multisplit,
-                             family = "gaussian")
+  # test hierarchy: Tippett
+  res.T <- test_only_hierarchy(x = x, y = y, clvar = clvar,
+                               dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian")
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = x, y = y, clvar = clvar,
+                               dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian",
+                               agg.method = "Stouffer")
 
   ## Test
   # This list encodes the tree structure
@@ -600,6 +731,29 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
 
   pvals_to_be <- rbind(res1, res2, res3, res4)
 
+  # Tippett
+  compare_with <- apply(X = pvals_to_be, MARGIN = 2,
+                        FUN = function(x, len_y) {
+                          max(1 - (1 - min(x))^(len_y), .Machine$double.neg.eps)
+                        },
+                        len_y = 4)
+
+  expected_result <- data.frame(block = c(NA, NA),
+                                p.value = compare_with[c("rsid1", "rsid4")])
+  expected_result$significant.cluster <- list(c("rsid1"), c("rsid4"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.T$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-134)
+  expect_equal(res.T$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-138)
+  expect_equal(res.T$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # Stouffer
+  stouffer_weights <- sqrt(c(800, 200, 350, 50) / sum(c(800, 200, 350, 50)))
+
   compare_with <- apply(X = pvals_to_be, MARGIN = 2,
                         FUN = function(x, len_y, stouffer_weights) {
                           pnorm(sum(stouffer_weights * qnorm(x)))
@@ -612,11 +766,11 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
-  expect_equal(res$res.hierarchy$p.value[1], expected_result$p.value[1],
+  expect_equal(res.S$res.hierarchy$p.value[1], expected_result$p.value[1],
                tol = 1e-220)
-  expect_equal(res$res.hierarchy$p.value[2], expected_result$p.value[2],
+  expect_equal(res.S$res.hierarchy$p.value[2], expected_result$p.value[2],
                tol = 1e-180)
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.S$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 
 
@@ -629,10 +783,16 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
   res.multisplit <- multisplit(x = x, y = y, family = "gaussian",
                                B = B)
 
-  # test hierarchy
-  res <- test_only_hierarchy(x = x, y = y, dendr = dendr,
-                             res.multisplit = res.multisplit,
-                             family = "gaussian", global.test = TRUE)
+  # test hierarchy: Tippett
+  res.T <- test_only_hierarchy(x = x, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian", global.test = TRUE)
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = x, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian", global.test = TRUE,
+                               agg.method = "Stouffer")
 
   cluster_test <- list(c("rsid1", "rsid2", "rsid3", "rsid4", "rsid5"),
                        c("rsid1", "rsid2"),
@@ -662,6 +822,27 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
 
   pvals_to_be <- rbind(res1, res2, res3, res4)
 
+  # Tippett
+  compare_with <- apply(X = pvals_to_be, MARGIN = 2,
+                        FUN = function(x, len_y) {
+                          max(1 - (1 - min(x))^(len_y), .Machine$double.neg.eps)
+                        },
+                        len_y = 4)
+
+  expected_result <- data.frame(block = c(NA, NA),
+                                p.value = compare_with[c("rsid1", "rsid4")])
+  expected_result$significant.cluster <- list(c("rsid1"), c("rsid4"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.T$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-70)
+  expect_equal(res.T$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-80)
+  expect_equal(res.T$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # Stouffer
   compare_with <- apply(X = pvals_to_be, MARGIN = 2,
                         FUN = function(x, len_y, stouffer_weights) {
                           pnorm(sum(stouffer_weights * qnorm(x)))
@@ -674,9 +855,11 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
-  expect_equal(res$res.hierarchy$p.value[1], expected_result$p.value[1])
-  expect_equal(res$res.hierarchy$p.value[2], expected_result$p.value[2])
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.S$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-120)
+  expect_equal(res.S$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-100)
+  expect_equal(res.S$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 })
 
@@ -700,8 +883,6 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
   r4 <- gen_one(n = 50, p = p, seed1 = 9, seed2 = 144, seed3 = 1111,
                 num_clvar = 3, coef_clvar = c(0.5, 0.25, 1.25))
 
-  stouffer_weights <- sqrt(c(800, 200, 350, 50) / sum(c(800, 200, 350, 50)))
-
   x <- list(r1$x, r2$x, r3$x, r4$x)
   y <- list(r1$y, r2$y, r3$y, r4$y)
   clvar <- list(r1$clvar, r2$clvar, r3$clvar, r4$clvar) # with co-variables
@@ -721,9 +902,14 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
   res.multisplit <- multisplit(x = x, y = y, clvar = clvar, family = "gaussian",
                                B = B)
 
-  # test hierarchy
-  res <- test_only_hierarchy(x = x, y = y, clvar = clvar, dendr = dendr,
-                             res.multisplit = res.multisplit, family = "gaussian")
+  # test hierarchy: Tippett
+  res.T <- test_only_hierarchy(x = x, y = y, clvar = clvar, dendr = dendr,
+                               res.multisplit = res.multisplit, family = "gaussian")
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = x, y = y, clvar = clvar, dendr = dendr,
+                               res.multisplit = res.multisplit, family = "gaussian",
+                               agg.method = "Stouffer")
 
   ## Test
   # This list encodes the tree structure
@@ -766,6 +952,31 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
 
   pvals_to_be <- rbind(res1, res2, res3, res4)
 
+  # Tippett
+  compare_with <- apply(X = pvals_to_be, MARGIN = 2,
+                        FUN = function(x, len_y) {
+                          max(1 - (1 - min(x))^(len_y), .Machine$double.neg.eps)
+                        },
+                        len_y = 4)
+
+  expected_result <- data.frame(block = c("1", "2"),
+                                p.value = compare_with[c("rsid3", "rsid7")],
+                                stringsAsFactors = FALSE)
+  expected_result$significant.cluster <- list(c("rsid3"), c("rsid7"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_identical(res.T$res.hierarchy$block, expected_result$block)
+  expect_equal(res.T$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-90)
+  expect_equal(res.T$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-100)
+  expect_equal(res.T$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # Stouffer
+  stouffer_weights <- sqrt(c(800, 200, 350, 50) / sum(c(800, 200, 350, 50)))
+
   compare_with <- apply(X = pvals_to_be, MARGIN = 2,
                         FUN = function(x, len_y, stouffer_weights) {
                           pnorm(sum(stouffer_weights * qnorm(x)))
@@ -779,12 +990,12 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
-  expect_identical(res$res.hierarchy$block, expected_result$block)
-  expect_equal(res$res.hierarchy$p.value[1], expected_result$p.value[1],
+  expect_identical(res.S$res.hierarchy$block, expected_result$block)
+  expect_equal(res.S$res.hierarchy$p.value[1], expected_result$p.value[1],
                tol = 1e-125)
-  expect_equal(res$res.hierarchy$p.value[2], expected_result$p.value[2],
+  expect_equal(res.S$res.hierarchy$p.value[2], expected_result$p.value[2],
                tol = 1e-140)
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.S$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 })
 
@@ -817,10 +1028,16 @@ test_that("test_only_hierarchy: check output (Example with smaller tree)", {
   set.seed(2)
   res.multisplit <- multisplit(x = sim.geno, y = y, family = "gaussian", B = B)
 
-  # test hierarchy
-  res <- test_only_hierarchy(x = sim.geno, y = y, dendr = dendr,
-                             res.multisplit = res.multisplit,
-                             family = "gaussian")
+  # test hierarchy: Tippett
+  res.T <- test_only_hierarchy(x = sim.geno, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian")
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = sim.geno, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian",
+                               agg.method = "Stouffer")
 
   cluster_test <- list(c("rsid1", "rsid2", "rsid5"),
                        c("rsid1", "rsid2"),
@@ -828,9 +1045,12 @@ test_that("test_only_hierarchy: check output (Example with smaller tree)", {
                        "rsid2",
                        "rsid5")
 
-  compare_with <- check_test_hierarchy(x = sim.geno, y = y, clvar = NULL,
-                                       res.multisplit = res.multisplit,
-                                       B = B, cluster_test = cluster_test)
+  pvals_to_be <- check_test_hierarchy(x = sim.geno, y = y, clvar = NULL,
+                                      res.multisplit = res.multisplit,
+                                      B = B, cluster_test = cluster_test)
+
+  # Tippett
+  compare_with <- pvals_to_be
 
   expected_result <- data.frame(block = c(NA),
                                 p.value = compare_with[c("rsid1")])
@@ -838,21 +1058,49 @@ test_that("test_only_hierarchy: check output (Example with smaller tree)", {
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
-  expect_equal(res$res.hierarchy$p.value, expected_result$p.value,
+  expect_equal(res.T$res.hierarchy$p.value, expected_result$p.value,
                tol = 1e-120)
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.T$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 
   # test_only_hierarchy: check output (Example with smaller tree; no global)
   # no global test
-  res <- test_only_hierarchy(x = sim.geno, y = y, dendr = dendr,
-                             res.multisplit = res.multisplit,
-                             family = "gaussian", global.test = FALSE)
+  res.T <- test_only_hierarchy(x = sim.geno, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian", global.test = FALSE)
 
-  expect_equal(res$res.hierarchy$p.value, expected_result$p.value,
+  expect_equal(res.T$res.hierarchy$p.value, expected_result$p.value,
                tol = 1e-120)
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.T$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
+
+  # Stouffer
+  compare_with <- pvals_to_be
+
+  expected_result <- data.frame(block = c(NA),
+                                p.value = compare_with[c("rsid1")])
+  expected_result$significant.cluster <- list(c("rsid1"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.S$res.hierarchy$p.value, expected_result$p.value,
+               tol = 1e-120)
+  expect_equal(res.S$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # test_only_hierarchy: check output (Example with smaller tree; no global)
+  # no global test
+  res.S <- test_only_hierarchy(x = sim.geno, y = y, dendr = dendr,
+                               res.multisplit = res.multisplit,
+                               family = "gaussian", global.test = FALSE,
+                               agg.method = "Stouffer")
+
+  expect_equal(res.S$res.hierarchy$p.value, expected_result$p.value,
+               tol = 1e-120)
+  expect_equal(res.S$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+
 })
 
 #### Perform testing with three data sets not measuring variables ####
@@ -874,12 +1122,10 @@ test_that("test_only_hierarchy: check return object for multiple data sets not m
   y2 <- tt2 %*% beta[c(1, 3)] + rnorm(20)
   y3 <- tt3 %*% beta[c(2, 3)] + rnorm(20)
 
-  stouffer_weights <- sqrt(c(20, 20, 20) / sum(c(20, 20, 20)))
-
   # use = "pairwise.complete.obs" (default)
   res_d <- cluster_var(x = list(tt1, tt2, tt3), d = NULL,
-                     method = "average",
-                     block = NULL)
+                       method = "average",
+                       block = NULL)
   # plot(res_d$res.tree[[1]])
 
   # multisplit
@@ -887,10 +1133,15 @@ test_that("test_only_hierarchy: check return object for multiple data sets not m
   res.multisplit <- multisplit(x = list(tt1, tt2, tt3), y = list(y1, y2, y3),
                                family = "gaussian", B = B)
 
-  # test hierarchy
-  res <- test_only_hierarchy(x = list(tt1, tt2, tt3), y = list(y1, y2, y3),
-                             dendr = res_d, res.multisplit = res.multisplit,
-                             family = "gaussian")
+  # test hierarchy: Tippett
+  res.T <- test_only_hierarchy(x = list(tt1, tt2, tt3), y = list(y1, y2, y3),
+                               dendr = res_d, res.multisplit = res.multisplit,
+                               family = "gaussian")
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = list(tt1, tt2, tt3), y = list(y1, y2, y3),
+                               dendr = res_d, res.multisplit = res.multisplit,
+                               family = "gaussian", agg.method = "Stouffer")
 
   cluster_test <- list(c("c1", "c2", "c5"),
                        c("c1", "c2"),
@@ -912,11 +1163,12 @@ test_that("test_only_hierarchy: check return object for multiple data sets not m
 
   pvals_to_be <- rbind(res1, res2, res3)
 
+  # Tippett
   compare_with <- apply(X = pvals_to_be, MARGIN = 2,
-                        FUN = function(x, len_y, stouffer_weights) {
-                          pnorm(sum(stouffer_weights * qnorm(x)))
+                        FUN = function(x, len_y) {
+                          max(1 - (1 - min(x))^(len_y), .Machine$double.neg.eps)
                         },
-                        len_y = 4, stouffer_weights = stouffer_weights)
+                        len_y = 3)
 
   expected_result <- data.frame(block = c(NA),
                                 p.value = NA)
@@ -924,9 +1176,29 @@ test_that("test_only_hierarchy: check return object for multiple data sets not m
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
-  expect_equal(res$res.hierarchy$p.value, expected_result$p.value,
+  expect_equal(res.T$res.hierarchy$p.value, expected_result$p.value,
                tol = 1e-120)
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.T$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # Stouffer
+  stouffer_weights <- sqrt(c(20, 20, 20) / sum(c(20, 20, 20)))
+
+  compare_with <- apply(X = pvals_to_be, MARGIN = 2,
+                        FUN = function(x, len_y, stouffer_weights) {
+                          pnorm(sum(stouffer_weights * qnorm(x)))
+                        },
+                        len_y = 3, stouffer_weights = stouffer_weights)
+
+  expected_result <- data.frame(block = c(NA),
+                                p.value = NA)
+  expected_result$significant.cluster <- list(NA)
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.S$res.hierarchy$p.value, expected_result$p.value,
+               tol = 1e-120)
+  expect_equal(res.S$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 })
 
@@ -965,10 +1237,15 @@ test_that("test_only_hierarchy: check return object for a data set with binary r
   res.multisplit <- multisplit(x = sim.geno, y = y,
                                family = "binomial", B = B)
 
-  # test hierarchy
-  res <- test_only_hierarchy(x = sim.geno, y = y,
-                             dendr = res_d, res.multisplit = res.multisplit,
-                             family = "binomial")
+  # test hierarchy: Tippett
+  res.T <- test_only_hierarchy(x = sim.geno, y = y,
+                               dendr = res_d, res.multisplit = res.multisplit,
+                               family = "binomial")
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = sim.geno, y = y,
+                               dendr = res_d, res.multisplit = res.multisplit,
+                               family = "binomial", agg.method = "Stouffer")
 
   cluster_test <- list(c("rsid1", "rsid2", "rsid3", "rsid4", "rsid5"),
                        c("rsid1", "rsid2", "rsid3"),
@@ -980,10 +1257,13 @@ test_that("test_only_hierarchy: check return object for a data set with binary r
                        "rsid4",
                        "rsid5")
 
-  compare_with <- check_test_hierarchy(x = sim.geno, y = y, clvar = NULL,
-                                       res.multisplit = res.multisplit,
-                                       B = B, cluster_test = cluster_test,
-                                       binomial = TRUE)
+  pvals_to_be <- check_test_hierarchy(x = sim.geno, y = y, clvar = NULL,
+                                      res.multisplit = res.multisplit,
+                                      B = B, cluster_test = cluster_test,
+                                      binomial = TRUE)
+
+  # Tippett
+  compare_with <- pvals_to_be
 
   expected_result <- data.frame(block = c(NA, NA),
                                 p.value = compare_with[c("rsid1", "rsid4")])
@@ -991,16 +1271,32 @@ test_that("test_only_hierarchy: check return object for a data set with binary r
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
-  expect_equal(res$res.hierarchy$p.value[1], expected_result$p.value[1],
+  expect_equal(res.T$res.hierarchy$p.value[1], expected_result$p.value[1],
                tol = 1e-25)
-  expect_equal(res$res.hierarchy$p.value[2], expected_result$p.value[2],
+  expect_equal(res.T$res.hierarchy$p.value[2], expected_result$p.value[2],
                tol = 1e-20)
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.T$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # Stouffer
+  compare_with <- pvals_to_be
+
+  expected_result <- data.frame(block = c(NA, NA),
+                                p.value = compare_with[c("rsid1", "rsid4")])
+  expected_result$significant.cluster <- list(c("rsid1"), c("rsid4"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.S$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-25)
+  expect_equal(res.S$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-20)
+  expect_equal(res.S$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 })
 
 #### Perform testing two data sets with binary response ####
-test_that("test_only_hierarchy: check return object for two data set with binary response", {
+test_that("test_only_hierarchy: check return object for two data sets with binary response", {
   n <- 800
   p <- 5
   B <- 50
@@ -1031,8 +1327,6 @@ test_that("test_only_hierarchy: check return object for two data set with binary
   pr2 <- 1 / (1 + exp(-eta2))
   y2 <- rbinom(n, 1, prob = pr2)
 
-  stouffer_weights <- sqrt(c(800, 800) / sum(c(800, 800)))
-
   # use = "pairwise.complete.obs" (default)
   res_d <- cluster_var(x = list(sim.geno1, sim.geno2), d = NULL,
                        method = "average",
@@ -1044,10 +1338,15 @@ test_that("test_only_hierarchy: check return object for two data set with binary
   res.multisplit <- multisplit(x = list(sim.geno1, sim.geno2), y = list(y1, y2),
                                family = "binomial", B = B)
 
-  # test hierarchy
-  res <- test_only_hierarchy(x = list(sim.geno1, sim.geno2), y = list(y1, y2),
-                             dendr = res_d, res.multisplit = res.multisplit,
-                             family = "binomial")
+  # test hierarchy: Tippett
+  res.T <- test_only_hierarchy(x = list(sim.geno1, sim.geno2), y = list(y1, y2),
+                               dendr = res_d, res.multisplit = res.multisplit,
+                               family = "binomial")
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = list(sim.geno1, sim.geno2), y = list(y1, y2),
+                               dendr = res_d, res.multisplit = res.multisplit,
+                               family = "binomial", agg.method = "Stouffer")
 
   cluster_test <- list(c("rsid1", "rsid2", "rsid3", "rsid4", "rsid5"),
                        c("rsid1", "rsid2"),
@@ -1060,16 +1359,39 @@ test_that("test_only_hierarchy: check return object for two data set with binary
                        "rsid5")
 
   res1 <- check_test_hierarchy(x = sim.geno1, y = y1, clvar = NULL,
-                                       res.multisplit = res.multisplit[1],
-                                       B = B, cluster_test = cluster_test,
-                                       binomial = TRUE)
+                               res.multisplit = res.multisplit[1],
+                               B = B, cluster_test = cluster_test,
+                               binomial = TRUE)
 
   res2 <- check_test_hierarchy(x = sim.geno2, y = y2, clvar = NULL,
-                                       res.multisplit = res.multisplit[2],
-                                       B = B, cluster_test = cluster_test,
-                                       binomial = TRUE)
+                               res.multisplit = res.multisplit[2],
+                               B = B, cluster_test = cluster_test,
+                               binomial = TRUE)
 
   pvals_to_be <- rbind(res1, res2)
+
+  # Tippett
+  compare_with <- apply(X = pvals_to_be, MARGIN = 2,
+                        FUN = function(x, len_y) {
+                          max(1 - (1 - min(x))^(len_y), .Machine$double.neg.eps)
+                        },
+                        len_y = 2)
+
+  expected_result <- data.frame(block = c(NA, NA),
+                                p.value = compare_with[c("rsid1", "rsid4")])
+  expected_result$significant.cluster <- list(c("rsid1"), c("rsid4"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.T$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-40)
+  expect_equal(res.T$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-30)
+  expect_equal(res.T$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # Stouffer
+  stouffer_weights <- sqrt(c(800, 800) / sum(c(800, 800)))
 
   compare_with <- apply(X = pvals_to_be, MARGIN = 2,
                         FUN = function(x, len_y, stouffer_weights) {
@@ -1083,11 +1405,149 @@ test_that("test_only_hierarchy: check return object for two data set with binary
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
-  expect_equal(res$res.hierarchy$p.value[1], expected_result$p.value[1],
+  expect_equal(res.S$res.hierarchy$p.value[1], expected_result$p.value[1],
                tol = 1e-40)
-  expect_equal(res$res.hierarchy$p.value[2], expected_result$p.value[2],
+  expect_equal(res.S$res.hierarchy$p.value[2], expected_result$p.value[2],
                tol = 1e-30)
-  expect_equal(res$res.hierarchy$significant.cluster,
+  expect_equal(res.S$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 })
 
+
+#### Perform testing three data sets with binary response and unequal sample size ####
+test_that("test_only_hierarchy: check return object for three data sets with binary response", {
+  skip_on_bioc()
+
+  n1 <- 800
+  n2 <- 200
+  n3 <- 150
+  p <- 5
+  B <- 50
+
+  ## simulate data
+  require(MASS)
+  set.seed(9229)
+  sim.geno1 <- mvrnorm(n = n1, mu = rep(0, p),
+                       Sigma = toeplitz(0.8^(seq(0, p - 1))))
+  colnames(sim.geno1) <- paste0("rsid", 1:p)
+
+  sim.geno2 <- mvrnorm(n = n2, mu = rep(0, p),
+                       Sigma = toeplitz(0.8^(seq(0, p - 1))))
+  colnames(sim.geno2) <- paste0("rsid", 1:p)
+
+  sim.geno3 <- mvrnorm(n = n3, mu = rep(0, p),
+                       Sigma = toeplitz(0.8^(seq(0, p - 1))))
+  colnames(sim.geno3) <- paste0("rsid", 1:p)
+
+  set.seed(144)
+  data.dim <- dim(sim.geno1)
+
+  ind.active <- sample(1:data.dim[2], 2)
+  beta <- rep(0, data.dim[2])
+  beta[ind.active] <- 2
+
+  eta1 <- sim.geno1 %*% beta
+  pr1 <- 1 / (1 + exp(-eta1))
+  y1 <- rbinom(n1, 1, prob = pr1)
+
+  eta2 <- sim.geno2 %*% beta
+  pr2 <- 1 / (1 + exp(-eta2))
+  y2 <- rbinom(n2, 1, prob = pr2)
+
+  eta3 <- sim.geno3 %*% beta
+  pr3 <- 1 / (1 + exp(-eta3))
+  y3 <- rbinom(n3, 1, prob = pr3)
+
+  # use = "pairwise.complete.obs" (default)
+  res_d <- cluster_var(x = list(sim.geno1, sim.geno2, sim.geno3), d = NULL,
+                       method = "average",
+                       block = NULL)
+  # plot(res_d$res.tree[[1]])
+
+  # multisplit
+  set.seed(2)
+  res.multisplit <- multisplit(x = list(sim.geno1, sim.geno2, sim.geno3),
+                               y = list(y1, y2, y3), family = "binomial",
+                               B = B)
+
+  # test hierarchy: Tippett
+  res.T <- test_only_hierarchy(x = list(sim.geno1, sim.geno2, sim.geno3),
+                               y = list(y1, y2, y3), dendr = res_d,
+                               res.multisplit = res.multisplit,
+                               family = "binomial")
+
+  # test hierarchy: Stouffer
+  res.S <- test_only_hierarchy(x = list(sim.geno1, sim.geno2, sim.geno3),
+                               y = list(y1, y2, y3), dendr = res_d,
+                               res.multisplit = res.multisplit,
+                               family = "binomial", agg.method = "Stouffer")
+
+  cluster_test <- list(c("rsid1", "rsid2", "rsid3", "rsid4", "rsid5"),
+                       c("rsid1", "rsid2"),
+                       c("rsid3", "rsid4", "rsid5"),
+                       c("rsid3", "rsid4"),
+                       "rsid1",
+                       "rsid2",
+                       "rsid3",
+                       "rsid4",
+                       "rsid5")
+
+  res1 <- check_test_hierarchy(x = sim.geno1, y = y1, clvar = NULL,
+                               res.multisplit = res.multisplit[1],
+                               B = B, cluster_test = cluster_test,
+                               binomial = TRUE)
+
+  res2 <- check_test_hierarchy(x = sim.geno2, y = y2, clvar = NULL,
+                               res.multisplit = res.multisplit[2],
+                               B = B, cluster_test = cluster_test,
+                               binomial = TRUE)
+
+  res3 <- check_test_hierarchy(x = sim.geno3, y = y3, clvar = NULL,
+                               res.multisplit = res.multisplit[3],
+                               B = B, cluster_test = cluster_test,
+                               binomial = TRUE)
+
+  pvals_to_be <- rbind(res1, res2, res3)
+
+  # Tippett
+  compare_with <- apply(X = pvals_to_be, MARGIN = 2,
+                        FUN = function(x, len_y) {
+                          max(1 - (1 - min(x))^(len_y), .Machine$double.neg.eps)
+                        },
+                        len_y = 3)
+
+  expected_result <- data.frame(block = c(NA, NA),
+                                p.value = compare_with[c("rsid1", "rsid4")])
+  expected_result$significant.cluster <- list(c("rsid1"), c("rsid4"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.T$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-40)
+  expect_equal(res.T$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-30)
+  expect_equal(res.T$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+
+  # Stouffer
+  stouffer_weights <- sqrt(c(n1, n2, n3) / sum(c(n1, n2, n3)))
+
+  compare_with <- apply(X = pvals_to_be, MARGIN = 2,
+                        FUN = function(x, len_y, stouffer_weights) {
+                          pnorm(sum(stouffer_weights * qnorm(x)))
+                        },
+                        len_y = 2, stouffer_weights = stouffer_weights)
+
+  expected_result <- data.frame(block = c(NA, NA),
+                                p.value = compare_with[c("rsid1", "rsid4")])
+  expected_result$significant.cluster <- list(c("rsid1"), c("rsid4"))
+  rownames(expected_result) <- NULL
+  attr(expected_result, "class") <- c("data.frame")
+
+  expect_equal(res.S$res.hierarchy$p.value[1], expected_result$p.value[1],
+               tol = 1e-40)
+  expect_equal(res.S$res.hierarchy$p.value[2], expected_result$p.value[2],
+               tol = 1e-30)
+  expect_equal(res.S$res.hierarchy$significant.cluster,
+               expected_result$significant.cluster)
+})

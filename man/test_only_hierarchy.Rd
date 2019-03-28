@@ -6,9 +6,10 @@
 \usage{
 test_only_hierarchy(x, y, dendr, res.multisplit, clvar = NULL,
   family = c("gaussian", "binomial"), alpha = 0.05,
-  global.test = TRUE, verbose = FALSE, sort.parallel = TRUE,
-  parallel = c("no", "multicore", "snow"), ncpus = 1L, cl = NULL,
-  check.input = TRUE, unique.colnames.x = NULL)
+  global.test = TRUE, agg.method = c("Tippett", "Stouffer"),
+  verbose = FALSE, sort.parallel = TRUE, parallel = c("no",
+  "multicore", "snow"), ncpus = 1L, cl = NULL, check.input = TRUE,
+  unique.colnames.x = NULL)
 }
 \arguments{
 \item{x}{a matrix or list of matrices for multiple data sets. The matrix or
@@ -36,6 +37,12 @@ either \code{"gaussian"} or \code{"binomial"}.}
 
 \item{global.test}{a logical value indicating whether the global test should
 be performed.}
+
+\item{agg.method}{a character string naming an aggregation method which
+aggregates the p-values over the different data sets for a given cluster;
+either \code{"Tippett"} (Tippett's rule) or \code{"Stouffer"}
+(Stouffer's rule). This argument is only relevant if multiple data sets
+are specified in the function call.}
 
 \item{verbose}{a logical value indicating whether the progress of the computation
 should be printed in the console.}
@@ -85,7 +92,7 @@ There is a \code{print} method for this class; see
 \code{\link{print.hierT}}.
 }
 \description{
-Hierarchical Testing given the output of the function
+Hierarchical testing given the output of the function
 \code{\link{multisplit}}.
 }
 \details{
@@ -115,6 +122,10 @@ This way each processor gets a different substream of the pseudo random
 number generator stream which makes the results reproducible if the arguments
 (as \code{sort.parallel} and \code{ncpus}) remain unchanged. See the vignette
 or the reference for more details.
+
+Note that if Tippett's aggregation method is applied for multiple data
+sets, then very small p-values are set to machine precision. This is
+due to rounding in floating point arithmetic.
 }
 \examples{
 n <- 200

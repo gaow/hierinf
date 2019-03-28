@@ -59,8 +59,8 @@
 #' @return The returned value is an object of class \code{"hierM"}, consisting
 #' of a list with number of elements corresponding to the number of data sets.
 #' Each element (corresponding to a data set
-#' % with \code{nobs} observations
-#' ) contains a list with two matrices. The first matrix
+#' % with \code{nobs} observations) contains a list with two matrices.
+#' The first matrix
 #' % of size \code{B x [nobs / 2]}
 #' contains the indices of the second half of variables (which were not used
 #' to select the variables). The second matrix
@@ -129,7 +129,8 @@ multisplit <- function(x, y, clvar = NULL, B = 50, proportion.select = 1/6,
                                # test_hierarchy_given_multisplit
                                check_testing_arguments = FALSE,
                                dendr = NULL, block = NULL, alpha = NULL,
-                               global.test = NULL, verbose = NULL)
+                               global.test = NULL, agg.method = NULL,
+                               verbose = NULL)
     x <- res$x
     y <- res$y
     clvar <- res$clvar

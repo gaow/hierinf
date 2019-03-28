@@ -96,7 +96,8 @@ compute_r2 <- function(x, y, res.test.hierarchy, clvar = NULL,
                              # test_hierarchy_given_multisplit
                              check_testing_arguments = FALSE,
                              dendr = NULL, block = NULL, alpha = NULL,
-                             global.test = NULL, verbose = NULL)
+                             global.test = NULL, agg.method = NULL,
+                             verbose = NULL)
   x <- res$x
   y <- res$y
   clvar <- res$clvar
@@ -215,7 +216,9 @@ return_r2 <- function (x, y, clvar, family) {
   # compute r2
   r2 <-
     if (family == "binomial") {
-      fmsb::NagelkerkeR2(MEL(design.mat, y, maxit = 100))$R2
+      # We need the argument model = TRUE in the glm function call such that
+      # the function NagelkerkeR2 works.
+      fmsb::NagelkerkeR2(MEL(design.mat, y, maxit = 100, model = TRUE))$R2
     } else if (family == "gaussian") {
       stats::summary.lm(stats::lm(y ~ design.mat))$adj.r.squared
     }

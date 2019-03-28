@@ -4,11 +4,12 @@
 #' \code{hierT}.
 #'
 #' @param x an object of class \code{hierT}
-#' @param ... additional arguments to \code{\link{print.data.frame}}
 #' @param n.terms maximum number of column names or variables names to be
 #' printed per cluster or group of variables.
+#' @param digits number of significant digits to be used.
 #' @param right logical value indicating whether the values should or should
 #' not be right-aligned.
+#' @param ... additional arguments to \code{\link{print.data.frame}}
 #'
 #' @details The function prints the significant clusters or groups of variables
 #' of an object of class \code{hierT}. By default, it prints at most the first
@@ -48,10 +49,15 @@
 #' @name print.hierT
 #' @export
 
-print.hierT <- function(x, ...,  n.terms = 5L, right = FALSE) {
+print.hierT <- function(x, n.terms = 5L, digits = max(3, getOption("digits") - 3),
+                        right = FALSE, ...) {
+
   stopifnot((n.terms > 0) & (n.terms %% 1 == 0))
+  stopifnot((digits > 0) & (digits %% 1 == 0))
 
   x.print <- x$res.hierarchy
+
+  # Only print n.terms column names per significant cluster.
   len.cluster <- vapply(x.print$significant.cluster, FUN = length,
                         FUN.VALUE = 1)
   ind.long <- len.cluster > n.terms
@@ -64,6 +70,12 @@ print.hierT <- function(x, ...,  n.terms = 5L, right = FALSE) {
                                         ind.long = ind.long,
                                         MoreArgs = list(n.terms = n.terms),
                                         SIMPLIFY = FALSE)
+
+  # Only print <.Machine$double.eps instead of small p-values because of
+  # numerical reasons of Tippett's rule. I.e. identical(1 - 1e-17, 1) on
+  # binary64 is TRUE.
+  x.print$p.value <- format.pval(x.print$p.value, digits = digits)
+
   print.data.frame(x.print, ..., right = right)
 
   invisible(x)

@@ -4,18 +4,21 @@
 \alias{print.hierT}
 \title{Print Object of Class \code{hierT}}
 \usage{
-\method{print}{hierT}(x, ..., n.terms = 5L, right = FALSE)
+\method{print}{hierT}(x, n.terms = 5L, digits = max(3,
+  getOption("digits") - 3), right = FALSE, ...)
 }
 \arguments{
 \item{x}{an object of class \code{hierT}}
 
-\item{...}{additional arguments to \code{\link{print.data.frame}}}
-
 \item{n.terms}{maximum number of column names or variables names to be
 printed per cluster or group of variables.}
 
+\item{digits}{number of significant digits to be used.}
+
 \item{right}{logical value indicating whether the values should or should
 not be right-aligned.}
+
+\item{...}{additional arguments to \code{\link{print.data.frame}}}
 }
 \value{
 The returned values is a invisible copy of the object \code{x}.

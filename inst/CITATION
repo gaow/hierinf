@@ -1,0 +1,20 @@
+bibentry(bibtype = "Article",
+  title        = "Hierarchical inference for genome-wide association studies: a view on methodology with software",
+  author       = c(person(given = "Claude",
+                          family = "Renaux"),
+		               person(given = "Laura",
+                          family = "Buzdugan"),
+		               person(given = "Markus",
+                          family = "Kalisch"),
+                   person(given = "Peter",
+                          family = "B\\\"uhlmann")),
+  journal      = "arXiv preprint arXiv:1805.02988",
+  year         = "2018",
+
+  header       = "To cite hierinf in publications use:",
+  textVersion  =
+  paste("Claude Renaux, Laura Buzdugan, Markus Kalisch and Peter Buehlmann (2018).",
+        "Hierarchical inference for genome-wide association studies: a view on methodology with software.",
+        "arXiv preprint arXiv:1805.02988.")
+)
+

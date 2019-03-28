@@ -1,6 +1,6 @@
 #' Hierarchical Testing
 #'
-#' Hierarchical Testing given the output of the function
+#' Hierarchical testing given the output of the function
 #' \code{\link{multisplit}}.
 #'
 #' @param x a matrix or list of matrices for multiple data sets. The matrix or
@@ -21,6 +21,11 @@
 #' @param alpha the significant level at which the FWER is controlled.
 #' @param global.test a logical value indicating whether the global test should
 #' be performed.
+#' @param agg.method a character string naming an aggregation method which
+#' aggregates the p-values over the different data sets for a given cluster;
+#' either \code{"Tippett"} (Tippett's rule) or \code{"Stouffer"}
+#' (Stouffer's rule). This argument is only relevant if multiple data sets
+#' are specified in the function call.
 #' @param verbose a logical value indicating whether the progress of the computation
 #' should be printed in the console.
 #' @param sort.parallel a logical indicating whether the values are sorted with respect to
@@ -64,6 +69,10 @@
 #' number generator stream which makes the results reproducible if the arguments
 #' (as \code{sort.parallel} and \code{ncpus}) remain unchanged. See the vignette
 #' or the reference for more details.
+#'
+#' Note that if Tippett's aggregation method is applied for multiple data
+#' sets, then very small p-values are set to machine precision. This is
+#' due to rounding in floating point arithmetic.
 #'
 #' @return The returned value is an object of class \code{"hierT"}, consisting of
 #' two elements, the result of the multi-sample splitting step
@@ -139,6 +148,7 @@
 test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
                                 family = c("gaussian", "binomial"),
                                 alpha = 0.05, global.test = TRUE,
+                                agg.method = c("Tippett", "Stouffer"),
                                 verbose = FALSE, sort.parallel = TRUE,
                                 parallel = c("no", "multicore", "snow"),
                                 ncpus = 1L, cl = NULL, check.input = TRUE,
@@ -147,6 +157,7 @@ test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
   block <- dendr$block
   dendr <- dendr$res.tree
   family <- match.arg(family)
+  agg.method <- match.arg(agg.method)
   parallel <- match.arg(parallel)
   do.parallel <- (parallel != "no" && ncpus > 1L)
 
@@ -167,7 +178,8 @@ test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
                                # test_hierarchy_given_multisplit
                                check_testing_arguments = TRUE,
                                dendr = dendr, block = block, alpha = alpha,
-                               global.test = global.test, verbose = verbose)
+                               global.test = global.test,
+                               agg.method = agg.method, verbose = verbose)
 
     x <- res$x
     y <- res$y
@@ -201,6 +213,12 @@ test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
   stouffer.weights <- vapply(X = x, FUN = function(x) {nrow(x)}, FUN.VALUE = 1)
   stouffer.weights <- sqrt(stouffer.weights / sum(stouffer.weights))
 
+  # Calculate the model output for the following lm/glm model once:
+  # y ~ X[out.samples, sel.coeff] + clvar[out.samples, ]
+  mod.large <- compMOD_large(x = x, y = y, clvar = clvar,
+                             res.multisplit = res.multisplit,
+                             family = family)
+
   # The variable minimal.pval is used for the hierarchical adjustment.
   # The p-value of a subcluster has to be as least as large as the p-value of
   # its parent.
@@ -224,6 +242,8 @@ test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
                                                  colnames.cluster = unique.colnames.x,
                                                  family = family, len.y = len.y,
                                                  minimal.pval = minimal.pval,
+                                                 agg.method = agg.method,
+                                                 mod.large = mod.large,
                                                  stouffer.weights = stouffer.weights),
                                ret.obj = list("colnames.cluster" = NULL,
                                               "pval" = NULL))
@@ -314,6 +334,8 @@ test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
       family
       len.y
       minimal.pval
+      agg.method
+      mod.large
       stouffer.weights
       function(colnames.cluster) {
         tryCatch_W_E(comp_cluster_pval(x = x, y = y, clvar = clvar,
@@ -321,6 +343,8 @@ test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
                                        colnames.cluster = colnames.cluster,
                                        family = family, len.y = len.y,
                                        minimal.pval = minimal.pval,
+                                       agg.method = agg.method,
+                                       mod.large = mod.large,
                                        stouffer.weights = stouffer.weights),
                      ret.obj = list("colnames.cluster" = NULL,
                                     "pval" = NULL))
@@ -446,6 +470,8 @@ test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
                                                         family = family,
                                                         len.y = len.y,
                                                         minimal.pval = minimal.pval,
+                                                        agg.method = agg.method,
+                                                        mod.large = mod.large,
                                                         stouffer.weights = stouffer.weights),
                                       ret.obj = list("colnames.cluster" = NULL,
                                                      "pval" = NULL)))
@@ -533,6 +559,8 @@ test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
       dendr
       name.blocks
       res.blocks
+      agg.method
+      mod.large
       stouffer.weights
       function(i) {
         tryCatch_W_E(iterative_testing(x = x, y = y, clvar = clvar,
@@ -543,6 +571,8 @@ test_only_hierarchy <- function(x, y, dendr, res.multisplit, clvar = NULL,
                                        family = family,
                                        len.y = len.y, alpha = alpha,
                                        verbose = verbose,
+                                       agg.method = agg.method,
+                                       mod.large = mod.large,
                                        stouffer.weights = stouffer.weights),
                      ret.obj = list(name.block = name.blocks[i],
                                     signif.clusters = list(list(colnames.cluster = NULL,

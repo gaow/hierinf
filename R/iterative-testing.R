@@ -7,7 +7,7 @@
 # \code{cluster.queue} keeps track of the cluster to be tested.
 iterative_testing <- function(x, y, clvar, res.multisplit, dendr, name.block,
                               res.block, family, len.y, alpha, verbose,
-                              stouffer.weights) {
+                              agg.method, mod.large, stouffer.weights) {
 
   ### check if the current cluster is significant ###
   if (res.block$pval > alpha){
@@ -74,6 +74,8 @@ iterative_testing <- function(x, y, clvar, res.multisplit, dendr, name.block,
                                              res.multisplit = res.multisplit,
                                              family = family, len.y = len.y,
                                              minimal.pval = cluster.queue[[1]]$pval,
+                                             agg.method = agg.method,
+                                             mod.large = mod.large,
                                              stouffer.weights = stouffer.weights),
                              SIMPLIFY = FALSE)
 

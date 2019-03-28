@@ -94,7 +94,8 @@ check_input_testing <- function(x, y, clvar, family,
                                 # arguments for the function
                                 # test_hierarchy_given_multisplit
                                 check_testing_arguments,
-                                dendr, block, alpha, global.test, verbose) {
+                                dendr, block, alpha, global.test,
+                                agg.method, verbose) {
   ## check x, y, clvar and family
   res <- check_x_y_clvar_family(x = x, y = y, clvar = clvar, family = family)
 
@@ -157,13 +158,17 @@ check_input_testing <- function(x, y, clvar, family,
       stop("The argument alpha is required to be a numeric value between 0 and 1.")
     }
 
-    ## check global.test and verbose
+    ## check global.test, agg.method, and verbose
     if (!is.logical(global.test) | length(global.test) != 1) {
       stop("The argument global.test is required to be of type logical and to be of length 1.")
+    }
+    if (!(agg.method %in% c("Tippett", "Stouffer")) | !is.character(agg.method) | length(agg.method) != 1) {
+      stop("The argument agg.method is required to be of type character and to be of length 1.")
     }
     if (!is.logical(verbose) | length(verbose) != 1) {
       stop("The argument verbose is required to be of type logical and to be of length 1.")
     }
+
   } else {
     unique_colnames_x <- NULL
   }

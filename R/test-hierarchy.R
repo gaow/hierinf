@@ -1,6 +1,6 @@
 #' Hierarchical Testing
 #'
-#' Hierarchical Testing based on multi-sample splitting.
+#' Hierarchical testing based on multi-sample splitting.
 #'
 #' @param x a matrix or list of matrices for multiple data sets. The matrix or
 #' matrices have to be of type numeric and are required to have column names
@@ -23,6 +23,11 @@
 #' @param alpha the significant level at which the FWER is controlled.
 #' @param global.test a logical value indicating whether the global test should
 #' be performed.
+#' @param agg.method a character string naming an aggregation method which
+#' aggregates the p-values over the different data sets for a given cluster;
+#' either \code{"Tippett"} (Tippett's rule) or \code{"Stouffer"}
+#' (Stouffer's rule). This argument is only relevant if multiple data sets
+#' are specified in the function call.
 #' @param verbose logical value indicating whether the progress of the computation
 #' should be printed in the console.
 #' @param sort.parallel a logical indicating whether the values are sorted with respect to
@@ -69,6 +74,10 @@
 #' number generator stream which makes the results reproducible if the arguments
 #' (as \code{sort.parallel} and \code{ncpus}) remain unchanged. See the vignette
 #' or the reference for more details.
+#'
+#' Note that if Tippett's aggregation method is applied for multiple data
+#' sets, then very small p-values are set to machine precision. This is
+#' due to rounding in floating point arithmetic.
 #'
 #' @return The returned value is an object of class \code{"hierT"},
 #' consisting of two elements, the result of the multi-sample splitting step
@@ -139,11 +148,13 @@ test_hierarchy <- function(x, y, dendr, clvar = NULL,
                            family = c("gaussian", "binomial"),
                            B = 50, proportion.select = 1/6, standardize = FALSE,
                            alpha = 0.05, global.test = TRUE,
+                           agg.method = c("Tippett", "Stouffer"),
                            verbose = FALSE, sort.parallel =  TRUE,
                            parallel = c("no", "multicore", "snow"),
                            ncpus = 1L, cl = NULL) {
 
   family <- match.arg(family)
+  agg.method <- match.arg(agg.method)
   parallel <- match.arg(parallel)
 
   ## Check input
@@ -160,7 +171,7 @@ test_hierarchy <- function(x, y, dendr, clvar = NULL,
                              check_testing_arguments = TRUE,
                              dendr = dendr$res.tree, block = dendr$block,
                              alpha = alpha, global.test = global.test,
-                             verbose = verbose)
+                             agg.method = agg.method, verbose = verbose)
   rm(list = c("x", "y", "clvar"))
 
   ## call multisplit
@@ -189,6 +200,7 @@ test_hierarchy <- function(x, y, dendr, clvar = NULL,
                                      res.multisplit = res.multisplit,
                                      clvar = res$clvar, family = family,
                                      alpha = alpha, global.test = global.test,
+                                     agg.method = agg.method,
                                      verbose = verbose,
                                      sort.parallel =  sort.parallel,
                                      parallel = parallel, ncpus = ncpus,

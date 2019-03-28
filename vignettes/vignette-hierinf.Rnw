@@ -60,6 +60,12 @@
 contains the part about the illustration of our \textsf{R}-package
 \texttt{hierinf}.}
 
+\section{Cite \texttt{hierinf}}
+If you use the \texttt{hierinf} package, please cite the paper Renaux, C.,
+Buzdugan, L., Kalisch, M., and B\"uhlmann, P. (2018). Hierarchical inference
+for genome-wide association studies: a view on methodology with software.
+\textit{arXiv preprint arXiv:1805.02988}.
+
 \section{Introduction}
 Hierarchical inference is a key technique for computationally and statistically
 efficient hypothesis testing and multiple testing adjustment. We consider
@@ -81,7 +87,7 @@ The package is a re-implementation of the \textsf{R} package \texttt{hierGWAS}
 \citep{hierGWASpackage160} and includes new features like straightforward
 parallelization, an additionally option for constructing a hierarchical
 tree based on spatially contiguous genomic positions, and the possibility
-of jointly analyzing multiple data sets.
+of jointly analyzing multiple datasets.
 
 \section{Software}\label{sec.hierinf}
 To summarize the method, one starts by clustering the data
@@ -111,7 +117,7 @@ with the response and the last 10 SNPs were simulated to have a population
 odds ratio of 2.
 The functions of the package \texttt{hierinf} require
 the input of the SNP data to be a \texttt{matrix} (or a list of matrices
-for multiple data sets). We use a \texttt{matrix} instead of a
+for multiple datasets). We use a \texttt{matrix} instead of a
 \texttt{data.frame} since this makes computation faster.
 
 <<>>=
@@ -121,7 +127,7 @@ library(hierinf)
 # random number generator (for parallel computing)
 RNGkind("L'Ecuyer-CMRG")
 
-# We use a small build-in data set for our toy example.
+# We use a small build-in dataset for our toy example.
 data(simGWAS)
 
 # The genotype, phenotype and the control variables are saved in
@@ -145,7 +151,7 @@ partitioning of consecutive positions of the SNPs. For a short
 description, see at the end of Section 2.3 in \cite{renaux18}.
 
 Hierarchical clustering is computationally expensive and prohibitive for
-large data sets. Thus, it makes sense to pre-define dis-joint sets of SNPs
+large datasets. Thus, it makes sense to pre-define dis-joint sets of SNPs
 which can be clustered separately. One would typically assume that the
 second level of a cluster tree structure corresponds to the blocks given
 by the chromosomes as illustrated in Figure \ref{fig3}.
@@ -178,12 +184,20 @@ argument \texttt{block} in both function calls can be omitted.
   };
 \path (b) -- (c) node (x) [midway] {$\cdots$};
 \end{tikzpicture}
-\caption{The user can define the second level of the tree structure using
-the argument \texttt{block} of the functions \texttt{cluster\char`_var} /
-\texttt{cluster\char`_position} and \texttt{test\char`_hierarchy} if desired.
-In this example, there are $k$ blocks on the second level of the tree. The function
+\caption{The top two levels of a hierarchical tree used
+to perform multiple testing. The user can optionally specify the second
+level of the tree with the advantage that one can easily run the code in
+parallel over different clusters in the second level, denoted by block 1,
+$\ldots$, block $k$.
+A natural choice is to choose the chromosomes as the second level
+of the hierarchical tree, which define a partition of the SNPs.
+If the second level is not specified, then the first split is
+estimated based on clustering the data, i.e. it is a binary split.
+The user can define the second level of the tree structure using
+the argument \texttt{block} in the functions \texttt{cluster\char`_var} /
+\texttt{cluster\char`_position}. The function
 \texttt{cluster\char`_var} / \texttt{cluster\char`_position} builds a separate
-hierarchical tree for each of the blocks.
+binary hierarchical tree for each of the blocks.
 }\label{fig3}
 \end{center}
 \end{figure}
@@ -226,7 +240,7 @@ of the hierarchical tree and the two commented arguments parallel and
 ncpus are added.
 
 <<eval=FALSE>>=
-# Define the second level of the tree structure.
+# Store the positions of the SNPs.
 position <- data.frame("colnames" = paste0("SNP.", 1:1000),
                        "position" = seq(from = 1, to = 1000),
                        stringsAsFactors = FALSE)
@@ -318,8 +332,8 @@ $\mbox{R}^2$ value of the second row of the output, i.e.
 need the double square brackets to access the column names stored in the column
 \texttt{significant.cluster} of the output since the last column is a list
 where each element contains a character vector of the column names. The two
-other columns containing the block names and the p-values which both can be
-indexed using single square brackets as for any \texttt{data.frame}, e.g.
+other columns containing the block names and the p-values can both be indexed
+using single square brackets as for any \texttt{data.frame}, e.g.
 \texttt{result\$res.hierarchy[2, "p.value"]}.
 
 <<>>=
@@ -336,15 +350,17 @@ compute_r2(x = sim.geno, y = sim.pheno, clvar = sim.clvar,
            res.test.hierarchy = result, family = "binomial",
            colnames.cluster = coln.cluster)
 @
-
-If one does not specify the argument \texttt{colnames.cluster}, then the
-$\mbox{R}^2$ value of the whole data set is calculated.
+The function \texttt{compute\char`_r2} calculates the adjusted $\mbox{R}^2$ value or
+coefficient of determination of a cluster for a continuous response. The
+Nagelkerke's $\mbox{R}^2$ \citep{nagelkerke91} is calculated for a binary
+response as e.g. in our toy
+example.
 
 \subsection{Software for parallel computing} \label{subsec.parallel}
 
 The function calls of \texttt{cluster\char`_var}, \texttt{cluster\char`_position},
-and \texttt{test\char`_hierarchy} above can be evaluated in parallel if one adds
-the commented arguments \texttt{parallel = "multicore"} and \texttt{ncpus = 2}.
+and \texttt{test\char`_hierarchy} above are evaluated in parallel since we set
+the arguments \texttt{parallel = "multicore"} and \texttt{ncpus = 2}.
 The argument \texttt{parallel} can be set to \texttt{"no"} for serial
 evaluation (default value), to \texttt{"multicore"} for parallel evaluation
 using forking, or to \texttt{"snow"} for parallel evaluation using a parallel
@@ -364,10 +380,10 @@ numbers, one for each processor / computing node, using the \texttt{parallel}
 package; for more details see the vignette of the \texttt{parallel} package
 published by \citet{rcoreteam17}.
 
-We recommend to set the argument \texttt{parallel = "multicore"} which is
-possible on Unix/Mac (but not Windows) operation systems. The function is
+We recommend to set the argument \texttt{parallel = "multicore"} which will
+work on Unix/Mac (but not Windows) operation systems. The function is
 then evaluated in parallel using forking which is leaner on the memory usage.
-This is a neat feature for GWAS since e.g. a large SNP data set does not
+This is a neat feature for GWAS since e.g. a large SNP dataset does not
 have to be copied to the new environment of each of the processors. Note
 that this is only possible on a multicore machine and not on a cluster.
 
@@ -393,9 +409,10 @@ $B$ is the number of sample splits.
 \section{Meta-analysis for several datasets} \label{sec.meta}
 
 The naive (and conceptually wrong) approach would be to pool the different
-datasets and proceed as if it would be one homogeneous dataset. We advocate
-meta analysis and aggregating corresponding p-values; see \cite{renaux18}
-for more details.
+datasets and proceed as if it would be one homogeneous dataset, say, allowing
+for a different intercept per dataset. We advocate
+meta analysis and aggregating corresponding p-values; see
+\cite[Sec. 4]{renaux18} for more details.
 
 \paragraph{Fast computational methods for pooled GWAS.} There has been a
 considerable interest for fast algorithms for GWAS with very large sample
@@ -410,21 +427,23 @@ step comes essentially without any computational cost.
 
 \subsection{Software for aggregating p-values of multiple studies} \label{subsec.multiplestudies}
 
-It is easily possible to combine the information of multiple studies by
-aggregating p-values as described in Section \ref{sec.meta}.
+It is very convenient to combine the information of multiple studies by
+aggregating p-values as described in \cite[Sec. 4]{renaux18}.
 The package \texttt{hierinf} offers two methods for jointly estimating
-a single hierarchical tree for all data sets using either of the
+a single hierarchical tree for all datasets using either of the
 functions
 \texttt{cluster\char`_var} or \texttt{cluster\char`_position}; compare with
 Section \ref{subsec.clustering}. Testing is performed by the function
 \texttt{test\char`_hierarchy} in a top-down manner given by the joint
 hierarchical tree. For a given cluster, p-values are calculated based on the
-intersection of the cluster and each data set (corresponding to a study) and
+intersection of the cluster and each dataset (corresponding to a study) and
 those p-values are then aggregated to obtain one p-value per cluster using
-Stouffer's rule as in Section 4 in \cite{renaux18} or \cite{stouffer49}.
-The difference and issues of the two methods for
+either Tippett's rule  or Stouffer's method as in \cite[Sec. 4]{renaux18};
+see argument \texttt{agg.method} of the function
+\texttt{test\char`_hierarchy}. The difference and issues of the two methods for
 estimating a joint hierarchical tree are described in the following two
 paragraphs.
+
 
 The function \texttt{cluster\char`_var} estimates a hierarchical tree based on
 clustering the SNPs from all the studies. Problems arise if the
@@ -438,7 +457,7 @@ a given cluster remains as described before.
 The function \texttt{cluster\char`_position} estimates a hierarchical tree based
 on the genomic positions of the SNPs from all the studies.
 The problems mentioned above do not show up here since SNPs, may be
-different ones for various data sets, can still be uniquely assigned to
+different ones for various datasets, can still be uniquely assigned to
 genomic regions.
 
 The only differences in the function calls are that the arguments \texttt{x},
@@ -446,26 +465,29 @@ The only differences in the function calls are that the arguments \texttt{x},
 just a single matrix.  Note that the order of the list elements of the arguments
 \texttt{x}, \texttt{y}, and \texttt{clvar} matter, i.e. the user has to
 stick to the order that the first element of the three lists corresponds to
-the first data set, the second element to the second data sets, and so on.
+the first dataset, the second element to the second datasets, and so on.
 One would replace the corresponding element of the list containing the
-control covariates (argument \texttt{clvar}) by \texttt{NULL} if some data set
+control covariates (argument \texttt{clvar}) by \texttt{NULL} if some dataset
 has no control covariates.
-If none of the data sets have control covariates, then one can simply omit the
+If none of the datasets have control covariates, then one can simply omit the
 argument. Note that the argument \texttt{block} defines the second level of the
-tree which is assumed to be the same for all data sets or studies.
+tree which is assumed to be the same for all datasets or studies.
 The argument \texttt{block} has to be a \texttt{data.frame} which contains
-all the column names (of all the  data sets or studies) and their assignment
-to the blocks.
+all the column names (of all the  datasets or studies) and their assignment
+to the blocks. The aggregation method can be chosen using the
+argument \texttt{agg.method} of the function \texttt{test\char`_hierarchy},
+i.e. it can be set to either \texttt{"Tippett"} or \texttt{"Stouffer"}.
+The default aggregation method is Tippett's rule.
 
 The example below demonstrates the functions \texttt{cluster\char`_var} and
-\texttt{test\char`_hierarchy} for two data sets / studies measuring the
+\texttt{test\char`_hierarchy} for two datasets / studies measuring the
 same SNPs.
 
 <<>>=
-# The data sets need to be stored in different elements of a list.
+# The datasets need to be stored in different elements of a list.
 # Note that the order has to be the same for all the lists.
 # As a simple example, we artificially split the observations of the
-# toy data set in two parts, i.e. two data sets.
+# toy dataset in two parts, i.e. two datasets.
 set.seed(89)
 ind1 <- sample(1:500, 250)
 ind2 <- setdiff(1:500, ind1)
@@ -496,7 +518,6 @@ result <- test_hierarchy(x = sim.geno.2dat,
                          # parallel = "multicore",
                          # ncpus = 2)
 @
-
 The above \textsf{R} code can be evaluated in parallel if one adds the
 two commented arguments parallel and ncpus; compare with Section
 \ref{subsec.parallel} for more details about the software for parallel
@@ -507,25 +528,24 @@ The output shows three significant groups of SNPs and one single SNP.
 <<>>=
 print(result, n.terms = 4)
 @
-
-The significance of a cluster is based on the information of both data
-sets. For a given cluster, the p-values of each data set were aggregated using
-Stouffer's rule as in Section 4 in \cite{renaux18} or \cite{stouffer49}.
+The significance of a cluster is based on the information of both datasets.
+For a given cluster, the p-values of each dataset were aggregated using
+Tippett's rule as in \cite[Sec. 4]{renaux18} or \cite{tippett31}.
 Those aggregated p-values are
-displayed in the output above. We cannot judge which data set (or both or
+displayed in the output above. We cannot judge which dataset (or both or
 combined) inherits a strong signal such that a cluster is shown significant
 but that is not the goal. The goal is to combine the information of multiple
 studies.
 
 The crucial point is that the testing procedure goes top-down through a single
 jointly estimated tree for all the studies and only continues if at least one
-child is significant (based on the aggregated p-values of the multiple data
-sets) of a given cluster. The algorithm determines where to stop and naturally
+child is significant (based on the aggregated p-values of the multiple datasets)
+of a given cluster. The algorithm determines where to stop and naturally
 we get one output for all the studies. A possible single jointly estimated tree
 of the above \textsf{R} code is illustrated in Figure \ref{fig7}. In our
-example, both data sets measure the same SNPs. If that would not be the case,
-then intersection of the cluster and each data set is taken before calculating
-a p-value per data set / study and then aggregating those.
+example, both datasets measure the same SNPs. If that would not be the case,
+then intersection of the cluster and each dataset is taken before calculating
+a p-value per dataset / study and then aggregating those.
 
 
 \begin{figure}[!htb]
