@@ -350,11 +350,13 @@ compute_r2(x = sim.geno, y = sim.pheno, clvar = sim.clvar,
            res.test.hierarchy = result, family = "binomial",
            colnames.cluster = coln.cluster)
 @
-The function \texttt{compute\char`_r2} calculates the adjusted $\mbox{R}^2$ value or
-coefficient of determination of a cluster for a continuous response. The
-Nagelkerke's $\mbox{R}^2$ \citep{nagelkerke91} is calculated for a binary
-response as e.g. in our toy
-example.
+The function \texttt{compute\char`_r2} is based on multi-sample splitting.
+The $\mbox{R}^2$ value is calculated per split based on the second half of
+observations and based on the intersection of the selected variables and
+the user-specified cluster. Then, the $\mbox{R}^2$ values are
+averaged over the different splits.
+If one does not specify the argument \texttt{colnames.cluster}, then the
+$\mbox{R}^2$ value of the whole dataset is calculated.
 
 \subsection{Software for parallel computing} \label{subsec.parallel}
 
