@@ -1,6 +1,9 @@
 require("testthat")
 
 ## random number generator
+##### Change RNGversion in the future. Change Description such that #####
+##### Depends: R (>= 3.6.0)                                         #####
+suppressWarnings(RNGversion("3.5.0"))
 RNGkind("L'Ecuyer-CMRG")
 
 test_that("test_only_hierarchy: check input", {
@@ -233,7 +236,7 @@ test_that("test_only_hierarchy: check output (Example I)", {
   set.seed(144)
   data.dim <- dim(sim.geno)
 
-  ind.active <- sample(1:data.dim[2], 2)
+  ind.active <- c(4, 1) # sample(1:data.dim[2], 2)
   beta <- rep(0, data.dim[2])
   beta[ind.active] <- 2
   y <- sim.geno %*% beta + rnorm(data.dim[1])
@@ -326,7 +329,7 @@ test_that("test_only_hierarchy: check output (Example II)", {
   set.seed(144)
   data.dim <- dim(sim.geno) # first entry corresponds to rows and second to columns
 
-  ind.active <- sample(1:data.dim[2], 2)
+  ind.active <- c(4, 1) # sample(1:data.dim[2], 2)
   beta <- rep(0, data.dim[2])
   beta[ind.active] <- 2
   y <- sim.geno %*% beta + sim.clvar %*% c(0.25, 0.5, 1) + rnorm(data.dim[1])
@@ -405,7 +408,7 @@ test_that("test_only_hierarchy: check output (Example II)", {
 # Function for generating the data
 require(MASS)
 
-gen_one <- function(n, p, seed1, seed2, seed3, num_clvar = NULL,
+gen_one <- function(n, p, seed1, ind.a, seed3, num_clvar = NULL,
                     coef_clvar = NULL) {
   set.seed(seed1)
   x <- mvrnorm(n = n, mu = rep(0, p), Sigma = toeplitz(0.8^(seq(0, p - 1))) )
@@ -417,9 +420,8 @@ gen_one <- function(n, p, seed1, seed2, seed3, num_clvar = NULL,
     clvar <- NULL
   }
 
-  set.seed(seed2)
   data.dim <- dim(x) # first entry corresponds to rows and second to columns
-  ind.active <- sample(1:data.dim[2], 2)
+  ind.active <- ind.a # sample(1:data.dim[2], 2)
   beta <- rep(0, data.dim[2])
   beta[ind.active] <- 2
 
@@ -444,10 +446,10 @@ test_that("test_only_hierarchy: check output (Example III multiple data sets)", 
   B <- 50
 
   ## simulate data
-  r1 <- gen_one(n = n, p = p, seed1 = 9229, seed2 = 144, seed3 = 8)
-  r2 <- gen_one(n = n, p = p, seed1 = 929, seed2 = 144, seed3 = 99)
-  r3 <- gen_one(n = n, p = p, seed1 = 99, seed2 = 144, seed3 = 100)
-  r4 <- gen_one(n = n, p = p, seed1 = 9, seed2 = 144, seed3 = 1111)
+  r1 <- gen_one(n = n, p = p, seed1 = 9229, ind.a = c(4, 1), seed3 = 8)
+  r2 <- gen_one(n = n, p = p, seed1 = 929, ind.a = c(4, 1), seed3 = 99)
+  r3 <- gen_one(n = n, p = p, seed1 = 99, ind.a = c(4, 1), seed3 = 100)
+  r4 <- gen_one(n = n, p = p, seed1 = 9, ind.a = c(4, 1), seed3 = 1111)
 
   x <- list(r1$x, r2$x, r3$x, r4$x)
   y <- list(r1$y, r2$y, r3$y, r4$y)
@@ -555,10 +557,10 @@ test_that("test_only_hierarchy: check output (Example IV multiple data sets)", {
   ## simulate data
   require(MASS)
 
-  r1 <- gen_one(n = 800, p = p, seed1 = 9229, seed2 = 144, seed3 = 8)
-  r2 <- gen_one(n = 200, p = p, seed1 = 929, seed2 = 144, seed3 = 99)
-  r3 <- gen_one(n = 350, p = p, seed1 = 99, seed2 = 144, seed3 = 100)
-  r4 <- gen_one(n = 50, p = p, seed1 = 9, seed2 = 144, seed3 = 1111)
+  r1 <- gen_one(n = 800, p = p, seed1 = 9229, ind.a = c(4, 1), seed3 = 8)
+  r2 <- gen_one(n = 200, p = p, seed1 = 929, ind.a = c(4, 1), seed3 = 99)
+  r3 <- gen_one(n = 350, p = p, seed1 = 99, ind.a = c(4, 1), seed3 = 100)
+  r4 <- gen_one(n = 50, p = p, seed1 = 9, ind.a = c(4, 1), seed3 = 1111)
 
   x <- list(r1$x, r2$x, r3$x, r4$x)
   y <- list(r1$y, r2$y, r3$y, r4$y)
@@ -656,6 +658,9 @@ test_that("test_only_hierarchy: check output (Example IV multiple data sets)", {
 })
 
 ### Example V with co-variables ###
+###### The result of this test will change under RNGversion("3.6.0"). #####
+###### TODO Adjust example calcualted by hand when switching to       #####
+###### RNGversion("3.6.0").                                           #####
 test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
   skip_on_bioc()
 
@@ -666,13 +671,13 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
   ## simulate data
   require(MASS)
 
-  r1 <- gen_one(n = 800, p = p, seed1 = 9229, seed2 = 144, seed3 = 8,
+  r1 <- gen_one(n = 800, p = p, seed1 = 9229, ind.a = c(4, 1), seed3 = 8,
                 num_clvar = 3, coef_clvar = c(0.5, 0.25, 1.25))
-  r2 <- gen_one(n = 200, p = p, seed1 = 929, seed2 = 144, seed3 = 99,
+  r2 <- gen_one(n = 200, p = p, seed1 = 929, ind.a = c(4, 1), seed3 = 99,
                 num_clvar = 3, coef_clvar = c(0.5, 0.25, 1.25))
-  r3 <- gen_one(n = 350, p = p, seed1 = 99, seed2 = 144, seed3 = 100,
+  r3 <- gen_one(n = 350, p = p, seed1 = 99, ind.a = c(4, 1), seed3 = 100,
                 num_clvar = 3, coef_clvar = c(0.5, 0.25, 1.25))
-  r4 <- gen_one(n = 50, p = p, seed1 = 9, seed2 = 144, seed3 = 1111,
+  r4 <- gen_one(n = 50, p = p, seed1 = 9, ind.a = c(4, 1), seed3 = 1111,
                 num_clvar = 3, coef_clvar = c(0.5, 0.25, 1.25))
 
   x <- list(r1$x, r2$x, r3$x, r4$x)
@@ -874,13 +879,13 @@ test_that("test_only_hierarchy: check output (Example V multiple data sets)", {
   ## simulate data
   require(MASS)
 
-  r1 <- gen_one(n = 800, p = p, seed1 = 9229, seed2 = 144, seed3 = 8,
+  r1 <- gen_one(n = 800, p = p, seed1 = 9229, ind.a = c(7, 3), seed3 = 8,
                 num_clvar = 3, coef_clvar = c(0.5, 0.25, 1.25))
-  r2 <- gen_one(n = 200, p = p, seed1 = 929, seed2 = 144, seed3 = 99,
+  r2 <- gen_one(n = 200, p = p, seed1 = 929, ind.a = c(7, 3), seed3 = 99,
                 num_clvar = 3, coef_clvar = c(0.5, 0.25, 1.25))
-  r3 <- gen_one(n = 350, p = p, seed1 = 99, seed2 = 144, seed3 = 100,
+  r3 <- gen_one(n = 350, p = p, seed1 = 99, ind.a = c(7, 3), seed3 = 100,
                 num_clvar = 3, coef_clvar = c(0.5, 0.25, 1.25))
-  r4 <- gen_one(n = 50, p = p, seed1 = 9, seed2 = 144, seed3 = 1111,
+  r4 <- gen_one(n = 50, p = p, seed1 = 9, ind.a = c(7, 3), seed3 = 1111,
                 num_clvar = 3, coef_clvar = c(0.5, 0.25, 1.25))
 
   x <- list(r1$x, r2$x, r3$x, r4$x)
@@ -1015,7 +1020,7 @@ test_that("test_only_hierarchy: check output (Example with smaller tree)", {
   set.seed(144)
   data.dim <- dim(sim.geno)
 
-  ind.active <- sample(1:data.dim[2], 2)
+  ind.active <- c(4, 1) # sample(1:data.dim[2], 2)
   beta <- rep(0, data.dim[2])
   beta[ind.active] <- 2
   y <- sim.geno %*% beta + rnorm(data.dim[1])
@@ -1115,7 +1120,7 @@ test_that("test_only_hierarchy: check return object for multiple data sets not m
   colnames(tt3) <- c("c2", "c5")
 
   set.seed(144)
-  ind.active <- sample(1:3, 1)
+  ind.active <- 2 # sample(1:3, 1)
   beta <- rep(0, 3)
   beta[ind.active] <- 2
   y1 <- tt1 %*% beta[c(1, 2)] + rnorm(20)
@@ -1170,14 +1175,23 @@ test_that("test_only_hierarchy: check return object for multiple data sets not m
                         },
                         len_y = 3)
 
+  # expected_result <- data.frame(block = c(NA),
+  #                               p.value = NA)
+  # expected_result$significant.cluster <- list(NA)
+  # rownames(expected_result) <- NULL
+
+  # For RNGversion("3.6.0"), we need to apply the rule that the p-value can
+  # only increase by going from top to bottom through the tree.
   expected_result <- data.frame(block = c(NA),
-                                p.value = NA)
-  expected_result$significant.cluster <- list(NA)
+                                p.value = max(compare_with[c("c2")],
+                                              compare_with[c("c1_c2")],
+                                              compare_with[c("c1_c2_c5")]))
+  expected_result$significant.cluster <- list(c("c2"))
   rownames(expected_result) <- NULL
   attr(expected_result, "class") <- c("data.frame")
 
   expect_equal(res.T$res.hierarchy$p.value, expected_result$p.value,
-               tol = 1e-120)
+               tol = 1e-15)
   expect_equal(res.T$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 
@@ -1218,7 +1232,7 @@ test_that("test_only_hierarchy: check return object for a data set with binary r
   set.seed(144)
   data.dim <- dim(sim.geno)
 
-  ind.active <- sample(1:data.dim[2], 2)
+  ind.active <- c(4, 1) # sample(1:data.dim[2], 2)
   beta <- rep(0, data.dim[2])
   beta[ind.active] <- 2
 
@@ -1315,7 +1329,7 @@ test_that("test_only_hierarchy: check return object for two data sets with binar
   set.seed(144)
   data.dim <- dim(sim.geno1)
 
-  ind.active <- sample(1:data.dim[2], 2)
+  ind.active <- c(4, 1) # sample(1:data.dim[2], 2)
   beta <- rep(0, data.dim[2])
   beta[ind.active] <- 2
 
@@ -1442,7 +1456,7 @@ test_that("test_only_hierarchy: check return object for three data sets with bin
   set.seed(144)
   data.dim <- dim(sim.geno1)
 
-  ind.active <- sample(1:data.dim[2], 2)
+  ind.active <- c(4, 1) # sample(1:data.dim[2], 2)
   beta <- rep(0, data.dim[2])
   beta[ind.active] <- 2
 
