@@ -68,6 +68,25 @@ test_that("test_only_hierarchy: check input", {
                                    family = "gaussian"),
                expected_result)
 
+  # The column names of x or each element of x (list containing data sets)
+  # are required to have unique column names.
+  # (The tree and the output of the function multisplit are only fitted on x
+  # and y. This is irrelevant for this test.)
+  expect_error(test_only_hierarchy(x = cbind(x, x), y = y,
+                                   dendr = dendr,
+                                   res.multisplit = res.multisplit,
+                                   family = "gaussian"),
+               "The matrix x is required to have unique column names.",
+               fixed = TRUE)
+
+  expect_error(test_only_hierarchy(x = list(cbind(x, x), x),
+                                   y = list(y, y),
+                                   dendr = dendr,
+                                   res.multisplit = res.multisplit,
+                                   family = "gaussian"),
+               "Each of the matrices which are stored in x are required to have unique column names.",
+               fixed = TRUE)
+
   # If the trees (argument block is supplied) were fit on less variables,
   # then we try to fit the model.
   require("MASS")
@@ -1215,6 +1234,96 @@ test_that("test_only_hierarchy: check return object for multiple data sets not m
   expect_equal(res.S$res.hierarchy$significant.cluster,
                expected_result$significant.cluster)
 })
+
+
+
+
+
+
+######## TODO TODO TODO !!!!!!!!!
+
+#### Perform testing with a data set that contains colinear variables ####
+test_that("test_only_hierarchy: check return object for data set containing colinear variables", {
+  skip_on_bioc()
+
+  B <- 50
+  n <- 200
+  p <- 500
+  set.seed(3)
+  x <- mvrnorm(n, mu = rep(0, p), Sigma = diag(p))
+  colnames(x) <- paste0("Var", 1:p)
+  beta <- rep(0, p)
+  beta[c(5, 20, 46)] <- 1
+  y <- x %*% beta + rnorm(n)
+
+  x <- cbind(x, x) # duplicate all the variables (so now 1000 variables)
+  colnames(x)[501:1000] <- paste0("D2_", colnames(x)[501:1000])
+
+  dendr1 <- cluster_var(x = x)
+
+  set.seed(68)
+  res.multisplit1 <- multisplit(x = x, y = y, B = B)
+
+  # # both variables are included
+  # for (i in seq_len(nrow(res.multisplit1[[1]]$sel.coef))) {
+  #   print(i)
+  #   print(c("Var5", "D2_Var5")   %in% res.multisplit1[[1]]$sel.coef[i, ])
+  #   print(c("Var20", "D2_Var20") %in% res.multisplit1[[1]]$sel.coef[i, ])
+  #   print(c("Var46", "D2_Var46") %in% res.multisplit1[[1]]$sel.coef[i, ])
+  # }
+
+  # library(glmnet)
+  # fit.lasso <- glmnet(x = x, y = y)
+
+  # # unequal zero
+  # for (i in seq(0.01225, 1.11600, by = 0.005)) {
+  #   print(i)
+  #   coef.lasso <- coef(fit.lasso, s = i)
+  #   print(c("Var5", "D2_Var5")   %in% rownames(coef.lasso)[as.vector(coef.lasso) != 0])
+  #   print(c("Var20", "D2_Var20") %in% rownames(coef.lasso)[as.vector(coef.lasso) != 0])
+  #   print(c("Var46", "D2_Var46") %in% rownames(coef.lasso)[as.vector(coef.lasso) != 0])
+  # }
+
+  # # larer than 0.01 (some fixed constant)
+  # for (i in seq(0.01225, 1.11600, by = 0.005)) {
+  #   print(i)
+  #   coef.lasso <- coef(fit.lasso, s = i)
+  #   print(c("Var5", "D2_Var5")   %in% rownames(coef.lasso)[as.vector(coef.lasso) > 0.01])
+  #   print(c("Var20", "D2_Var20") %in% rownames(coef.lasso)[as.vector(coef.lasso) > 0.01])
+  #   print(c("Var46", "D2_Var46") %in% rownames(coef.lasso)[as.vector(coef.lasso) > 0.01])
+  # }
+
+  # plot(fit.lasso)
+  # sum(coef(fit.lasso, s = 0.01225) > 0.5)
+  # rownames(coef.lasso)[as.vector(coef(fit.lasso, s = 0.01225) > 0.01)]
+
+  # We need to apply the rule that the p-value can only increase by going
+  # from top to bottom through the tree. This is NOT done here!!!!
+  suppressWarnings(sign.clusters1 <- test_only_hierarchy(x = x, y = y, dendr = dendr1,
+                                                         res.multisplit = res.multisplit1,
+                                                         family = "gaussian"))
+  # attr(sign.clusters1$res.hierarchy, "warningMsgs")
+
+  cluster_test <- list(c("Var46", "D2_Var46"),
+                       c("Var5", "D2_Var5"),
+                       c("Var20", "D2_Var20"))
+
+  expected_result <- check_test_hierarchy(x = x, y = y, clvar = NULL,
+                                          res.multisplit = res.multisplit1[1],
+                                          B = B, cluster_test = cluster_test)
+
+  expect_true(all(sign.clusters1$res.hierarchy$p.value >= expected_result))
+  expect_equal(sign.clusters1$res.hierarchy$significant.cluster,
+               cluster_test)
+
+})
+
+
+
+
+
+
+
 
 #### Perform testing with binary response ####
 test_that("test_only_hierarchy: check return object for a data set with binary response", {

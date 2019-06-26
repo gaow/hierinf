@@ -70,12 +70,10 @@ comp_one_data <- function(x, y, clvar, res.multisplit, colnames.cluster,
                         MoreArgs = list(x = x, y = y, clvar = clvar,
                                         colnames.cluster = colnames.cluster,
                                         family = family))
-  if ((no_NA <- sum(is.na(pvals.split))) == B) {
-    stop("The p-value of a cluster could not be calculated for all of the ", B, " splits. You might have colinear variables in one of your data sets and the algorithm might try to test a cluster containing only colinear variables. There could be more than one colinear variable in that cluster but not all of them.")
-  }
 
-  if (no_NA > 0) {
-    warning(paste0("The p-value of a cluster could not be calculated in ", no_NA, " out of ", B, " splits for one of the data sets. This might be a problem because of colinear variables. The algorithm might try to test a cluster containing only colinear variables (but not all of them)."))
+  if ((no_NA <- sum(is.na(pvals.split))) > 0) {
+    warning(paste0("The p-value of a cluster could not be calculated in ", no_NA, " out of ", B, " splits for one of the data sets. The corresponding p-values are set to 1. This problem can occure due to colinear variables. The algorithm might try to test a cluster containing (only) colinear variables but not all of them."))
+    pvals.split[is.na(pvals.split)] <- 1
   }
 
   # Aggregation of p-values over the B splits

@@ -207,13 +207,13 @@ test_hierarchy <- function(x, y, dendr, clvar = NULL,
                                      cl = cl, check.input = FALSE,
                                      unique.colnames.x = res$unique_colnames_x)
 
-    # Check if there occurred warnings or erros
-  if (!is.null(attr(res.testing$res.hierarchy, "errorMsgs"))) {
-    warning("There occurred some errors while testing the hierarchy. See attribute 'errorMsgs' of the corresponding list element of the return object for more details.")
-  }
-  if (!is.null(attr(res.testing$res.hierarchy, "warningMsgs")) | !is.null(attr(res.testing$res.multisplit, "warningMsgs"))) {
-    warning("There occurred some warnings while multi splitting and / or testing the hierarchy. See attribute 'warningMsgs' of the corresponding list element of the return object for more details.")
-  }
+  # # Check if there occurred warnings or erros
+  # if (!is.null(attr(res.testing$res.hierarchy, "errorMsgs"))) {
+  #   warning("There occurred some errors while testing the hierarchy. See attribute 'errorMsgs' of the corresponding list element of the return object for more details.")
+  # }
+  # if (!is.null(attr(res.testing$res.hierarchy, "warningMsgs")) | !is.null(attr(res.testing$res.multisplit, "warningMsgs"))) {
+  #   warning("There occurred some warnings while multi splitting and / or testing the hierarchy. See attribute 'warningMsgs' of the corresponding list element of the return object for more details.")
+  # }
 
   return(res.testing)
 }

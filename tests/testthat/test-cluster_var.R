@@ -105,6 +105,16 @@ test_that("cluster_var: expect error", {
                                               stringsAsFactors = FALSE)),
                "There are column name of x which have no corresponding values in the first column of block (column names of x).",
                fixed = TRUE)
+
+  # The column names of x or each element of x (list containing data sets)
+  # are required to have unique column names.
+  expect_error(cluster_var(x = cbind(sim.geno1, sim.geno1)),
+               "Each of the matrices (or matrix) which are stored in x are required to have unique column names.",
+               fixed = TRUE)
+
+  expect_error(cluster_var(x = list(cbind(sim.geno1, sim.geno1), sim.geno1)),
+               "Each of the matrices (or matrix) which are stored in x are required to have unique column names.",
+               fixed = TRUE)
 })
 
 

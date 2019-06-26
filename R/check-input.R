@@ -128,7 +128,7 @@ check_input_testing <- function(x, y, clvar, family,
     len_y <- length(res$y)
     no.multisplit <- length(unlist(res.multisplit, recursive = FALSE)) / 2
     if (no.multisplit != len_y) {
-      stop("The number of phenotypes to be tested is different from the number of res.multisplit inputs")
+      stop("The number of responses to be tested is different from the number of res.multisplit inputs.")
     }
     for (i in seq_len(no.multisplit)) {
       if (any(names(res.multisplit[[i]]) != c("out.sample", "sel.coef"))) {
@@ -203,6 +203,9 @@ check_x_block <- function(x, block) {
       }
       if (is.null(colnames(x[[i]]))) {
         stop("The matrices (or matrix) which are stored in x are required to have column names. If there is no natural naming convention, then one can set them to some integer, say, 1 to p.")
+      }
+      if (length(unique(colnames(x[[i]]))) != ncol(x[[i]])) {
+        stop("Each of the matrices (or matrix) which are stored in x are required to have unique column names.")
       }
       colnames_x <- c(colnames_x, colnames(x[[i]]))
     }
@@ -303,7 +306,7 @@ check_x_y_clvar_family <- function(x, y, clvar, family) {
     y <- list(y)
   }
 
-  # number of phenotypes or number of different data sets
+  # number of responses or number of different data sets
   len_y <- length(y) # y is a list
 
   ## check x
@@ -313,7 +316,7 @@ check_x_y_clvar_family <- function(x, y, clvar, family) {
   if (is.list(x)) {
     len_x <- length(x)
     if (len_y != len_x) {
-      stop("The number of phenotypes to be tested is different from the number of SNP data matrices.")
+      stop("The number of responses to be tested is different from the number of matrices which are stored in x.")
     }
 
     for (i in seq_len(len_x)) {
@@ -321,19 +324,25 @@ check_x_y_clvar_family <- function(x, y, clvar, family) {
         stop("The elements of the list x are required to be matrices of type numeric.")
       }
       if (nrow(x[[i]]) != length(y[[i]])) {
-        stop("The length of the response and the corresponding number of rows of the SNP data matrix are not the same.")
+        stop("The length of the response and the corresponding number of rows / observations of the data matrix are different.")
       }
       if (is.null(colnames(x[[i]]))) {
         stop("The matrices which are stored in x are required to have column names. If there is no natural naming convention, then one can set them to some integer, say, 1 to p.")
+      }
+      if (length(unique(colnames(x[[i]]))) != ncol(x[[i]])) {
+        stop("Each of the matrices which are stored in x are required to have unique column names.")
       }
     }
   }
   if (is.matrix(x)) {
     if (len_y != 1) {
-      stop("The number of phenotypes to be tested is different from the number of SNP data matrices.")
+      stop("The number of responses to be tested is different from the number of matrices which are stored in x.")
     }
     if (is.null(colnames(x))) {
       stop("The matrix x is required to have column names. If there is no natural naming convention, then one can set them to some integer, say, 1 to p.")
+    }
+    if (length(unique(colnames(x))) != ncol(x)) {
+      stop("The matrix x is required to have unique column names.")
     }
     # if x is matrix, then save x as a list with one element
     x <- list(x)
@@ -346,7 +355,7 @@ check_x_y_clvar_family <- function(x, y, clvar, family) {
   if (is.list(clvar)) {
     len_clvar <- length(clvar)
     if (len_y != len_clvar) {
-      stop("The number of phenotypes to be tested is different from the number of clvar data matrices.")
+      stop("The number of responses to be tested is different from the number of clvar data matrices.")
     }
     for (i in seq_len(len_clvar)) {
       if (!is.matrix(clvar[[i]]) & !is.null(clvar[[i]])) {
@@ -364,7 +373,7 @@ check_x_y_clvar_family <- function(x, y, clvar, family) {
   }
   if (is.matrix(clvar)) {
     if (len_y != 1) {
-      stop("The number of phenotypes to be tested is different from the number of control covariates data matrices.")
+      stop("The number of responses to be tested is different from the number of control covariates data matrices.")
     }
     if (any(is.na(clvar))) {
       stop("The argument clvar is required to have no missing values.")
